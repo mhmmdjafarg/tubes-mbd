@@ -24,7 +24,7 @@ Framework
 ---------
 You'll be implementing these concurrency control schemes within a transaction processing framework that implements a simple, main-memory resident key-value store. This is a prototype system designed specially for this assignment, and may not be 100% perfect, so please watch for class emails in the coming weeks, as parts of this assignment may change slightly. Please report any bugs or problems to Kun Ren.
 
-To setup our framework, simply download the code. You'll see that it contains two subdirectories---'txn' and 'utils'. Nearly all of the source files you need to worry about are in the 'txn' subdirectory, though you might need to occasionally take a peek at a file or two in the 'util' subdirectory.
+To setup our framework, simply download the code(run: git clone https://github.com/kunrenyale/assignment_cc.git). You'll see that it contains two subdirectories---'txn' and 'utils'. Nearly all of the source files you need to worry about are in the 'txn' subdirectory, though you might need to occasionally take a peek at a file or two in the 'util' subdirectory.
 
 To build and test the system, you can run
   make test
@@ -175,7 +175,7 @@ Pseudocode to implement in RunOCCParallelScheduler:
 Part 4: Multiversion Timestamp Ordering Concurrency Control.  25 points
 --------------------------------------------------------------------------------
 You will have to implement the MVCC timestamp ordering protocol described in the lecture.
-Here we gave you a verion of pseudocode, or you can write your own pseudocode
+Here we gave you a version of pseudocode, or you can write your own pseudocode
 and argue why it's better than the ones presented here (see analysis question 5).  
 
 Pseudocode for the algorithm to implement (in the RunMVCCScheduler method):
