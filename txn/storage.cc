@@ -1,3 +1,6 @@
+// Author: Alexander Thomson (thomson@cs.yale.edu)
+// Modified by: Kun Ren (kun.ren@yale.edu)
+
 #include "txn/storage.h"
 
 bool Storage::Read(Key key, Value* result, int txn_unique_id) {

@@ -1,4 +1,5 @@
 // Author: Alexander Thomson (thomson@cs.yale.edu)
+// Modified by: Kun Ren (kun.ren@yale.edu)
 
 #ifndef _TXN_H_
 #define _TXN_H_
@@ -99,11 +100,9 @@ class Txn {
   TxnStatus status_;
 
   // Unique, monotonically increasing transaction ID, assigned by TxnProcessor.
-  // This is NOT used in any concurrency control methods---it only exists for
-  // debugging purposes.
   uint64 unique_id_;
 
-  // Start time (used for OCC and MVCC).
+  // Start time (used for OCC).
   double occ_start_time_;
 };
 

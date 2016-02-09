@@ -19,7 +19,8 @@ TxnProcessor::TxnProcessor(CCMode mode)
     lm_ = new LockManagerA(&ready_txns_);
   else if (mode_ == LOCKING)
     lm_ = new LockManagerB(&ready_txns_);
-    
+  
+  // Create the storage
   if (mode_ == MVCC) {
     storage_ = new MVCCStorage();
   } else {
@@ -234,7 +235,7 @@ void TxnProcessor::RunMVCCScheduler() {
   // Implement this method!
   
   // Hint: First start GarbageCollection thread. Then Pop a txn from txn_requests_,
-  // and pass it to a thread to execute. Note that you may need to create another function, like
+  // and pass it to a thread to execute. Note that you may need to create another method, like
   // TxnProcessor::MVCCExecuteTxn. You can use the active_txn_id_set_ defined in
   // the txn_processor.h to keep track of the oldest txn id.
   //

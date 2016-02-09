@@ -20,8 +20,7 @@ class MVCCStorage : public Storage {
   // The third parameter is the txn_unique_id(txn timestamp).
   virtual bool Read(Key key, Value* result, int txn_unique_id = 0);
 
-  // Inserts the record <key, value>, replacing any previous record with the
-  // same key.
+  // Inserts a new version with key and value
   // The third parameter is the txn_unique_id(txn timestamp).
   virtual void Write(Key key, Value value, int txn_unique_id = 0);
 
@@ -32,10 +31,10 @@ class MVCCStorage : public Storage {
   // Init storage
   virtual void InitStorage();
   
-  // Lock the key
+  // Lock the version_list of key
   virtual void Lock(Key key);
   
-  // Unlock the key
+  // Unlock the version_list of key
   virtual void Unlock(Key key);
   
   // Check whether apply or abort the write

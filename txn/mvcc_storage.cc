@@ -28,12 +28,12 @@ MVCCStorage::~MVCCStorage() {
   mutexs_.clear();
 }
 
-// Lock the version_list. Remember to lock the key when you read/update the version_list 
+// Lock the version_list of key. Remember to lock the key when you read/update the version_list 
 void MVCCStorage::Lock(Key key) {
   mutexs_[key]->Lock();
 }
 
-// Unlock the version_list.
+// Unlock the version_list of key.
 void MVCCStorage::Unlock(Key key) {
   mutexs_[key]->Unlock();
 }
@@ -57,21 +57,21 @@ bool MVCCStorage::CheckWrite(Key key, int txn_unique_id) {
   //
   // Implement this method!
   
-  // Hint: Before apply write, you should check whether we apply or abort the write
+  // Hint: Before apply write, you should check whether we should apply or abort the write
   // based on MVCC timestamp ordering protocol. Return true if we can apply the
   // write, return false if we should abort the write.
   
   return true;
 }
 
-// MVCC Write, only call this function if CheckWrite return true.
+// MVCC Write, call this method only if CheckWrite return true.
 void MVCCStorage::Write(Key key, Value value, int txn_unique_id) {
   // CPSC 438/538:
   //
   // Implement this method!
   
   // Hint: Insert a new version into the version_lists. Note that InitStorage()
-  // also calls this function to init storage.
+  // also calls this method to init storage.
 }
 
 
@@ -81,10 +81,10 @@ void MVCCStorage::GarbageCollection(int oldest_txn) {
   //
   // Implement this method!
   
-  // Hint: Iterate the storage(mvcc_data_) to delete the old versions. The idea
-  // is that if the oldest_txn is 9, and the version_lists contains verion_id:
+  // Hint: Iterate the storage(mvcc_data_) to erase the old versions. The idea
+  // is that if the oldest_txn is 9, and the version_lists contains the following verion_ids:
   // 12, 10, 8, 7, 6, 5, 4, 3, 2, 1, and the oldest_txn will never have to read
-  // verions from 1 to 7, so we can delete them(and free the memory).
+  // verions from 1 to 7, so we can erase them(and free the memory).
   
 }
 

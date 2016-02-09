@@ -120,7 +120,7 @@ class TxnProcessor {
   // validation.
   AtomicSet<Txn*> active_set_;  
   
-  // For MVCC to find the oldest txn_id
+  // For MVCC to keep track of the oldest txn_id
   AtomicSet<uint64> active_txn_id_set_;
 
   // Lock Manager used for LOCKING concurrency implementations.

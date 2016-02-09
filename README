@@ -1,5 +1,6 @@
 CPSC 438,Assignment 2: Concurrency Control (Locking, OCC and MVCC)
 Lead TF: Kun Ren (Questions or clarification requests should be emailed to kun.ren@yale.edu)
+
 Please do take advantage of teaching fellow office hours if you have trouble understanding the code that we are providing you.
 Time:     Monday   3-5 PM
           Thursday 7:30-9:30 PM
@@ -27,17 +28,14 @@ To setup our framework, simply download the code. You'll see that it contains tw
 
 To build and test the system, you can run
   make test
-at any time. This will first compile the system; if this succeeds with no errors, it will also run two test scripts: one which performs some basic correctness tests of your lock manager implementation, and a second which profiles performance of the system. This second one takes a couple of minutes to run, but you can cancel it at any time by pressing ctrl-C.(Note that you can not pass the lock manager test currently until you complete the lock manager implementation.)
+at any time. This will first compile the system; if this succeeds with no errors, it will also run two test scripts: one which performs some basic correctness tests of your lock manager implementation, and a second which profiles performance of the system. This second one takes a couple of minutes to run, but you can cancel it at any time by pressing ctrl-C.(Note that you can not pass the lock manager test right now until you complete the lock manager implementation.)
 
 Your submissions will be graded on code clarity as well correctness and efficiency. When implementing your solutions, please:
-
   * Comment your header files & code thoroughly in the manner demonstrated in the rest of the framework.
   * Organize your code logically.
   * Use descriptive variable names.
-  * Use vertical and horizontal whitespace meaningfully and consistently.
 
 In this assignment, you will need to make changes to the following files/classes/methods:
-
   txn/lock_manager.cc:
     all methods (aside for the constructor and deconstructor) for classes 'LockManagerA' (Part 1A) and 'LockManagerB' (Part 1B)
 
@@ -82,7 +80,7 @@ Part 1B: Slightly Less Simple Locking (adding in shared locks)  15 points
 -------------------------------------------------------------------------
 To increase concurrency, we can allow transactions with overlapping readsets but disjoing writesets to execute concurrently. We do this by adding in SHARED locks. Again, all data structures already exist, and all you need to implement are the 'WriteLock', 'ReadLock', 'Release', and 'Status' methods in the class 'LockManagerB'.
 
-Again, 'txn/lock_manager_test.cc' profides some basic correctness tests, but you should go beyond these in checking the correctness of your implementation.
+Again, 'txn/lock_manager_test.cc' provides some basic correctness tests, but you should go beyond these in checking the correctness of your implementation.
 
 
 ---------------------------------------------------------------------------
@@ -94,13 +92,13 @@ This is a simplified version of OCC compared to the one presented in the paper.
 Pseudocode for the OCC algorithm to implement (in the RunOCCScheduler method):
 
   while (true) {
-    Get the next new transaction request (if one is pending) and start it running in the execution thread.
+    Get the next new transaction request (if one is pending) and pass it to an execution thread.
     Deal with all transactions that have finished running.
   }
 
   In the execution thread:
-    Record start time.
-    Start transaction running in its own thread.
+    Record start time
+    Start transaction running
 
   Dealing with a finished transaction:
     // Validation phase:
@@ -115,8 +113,8 @@ Pseudocode for the OCC algorithm to implement (in the RunOCCScheduler method):
       Cleanup txn
       Completely restart the transaction.
     } else {
-      Apply all writes.
-      Mark transaction as committed.
+      Apply all writes
+      Mark transaction as committed
     }
 
   cleanup txn:
@@ -128,22 +126,22 @@ Pseudocode for the OCC algorithm to implement (in the RunOCCScheduler method):
 -------------------------------------------------------------------------------
 Part 3: Optimistic Concurrency Control with Parallel Validation.  15 points
 -------------------------------------------------------------------------------
-OCC with parallel validation means that the validation step for OCC is done in parallel. There are several different ways to do the parallel validation -- here we give a simplified version of the pseudocode from the paper, or you can write your own pseudocode based on the paper's presentation of parallel validation and argue why it's better than the ones presented here (see analysis question).  
+OCC with parallel validation means that the validation step for OCC is done in parallel. There are several different ways to do the parallel validation -- here we give a simplified version of the pseudocode from the paper, or you can write your own pseudocode based on the paper's presentation of parallel validation and argue why it's better than the ones presented here (see analysis question 4).  
 
 The util/atomic.h file contains data structures that may be useful for this section.
 
 Pseudocode to implement in RunOCCParallelScheduler:
 
   while (true) {
-    Get the next new transaction request (if one is pending) and start it running and doing the validation in the execution thread.
+    Get the next new transaction request (if one is pending) and pass it to an execution thread that executes the txn logic and does the validation.
   }
 
   In the execution thread:
-    Record start time.
-    Start transaction running in its own thread.
-    Make a copy of the active set save it;
+    Record start time
+    Start transaction running.
+    Make a copy of the active set save it
     Add this transaction to the active set
-    Start validation phase.
+    Start validation phase
 
     Validation phase:    
       for (each record whose key appears in the txn's read and write sets) {
@@ -177,12 +175,14 @@ Pseudocode to implement in RunOCCParallelScheduler:
 Part 4: Multiversion Timestamp Ordering Concurrency Control.  25 points
 --------------------------------------------------------------------------------
 You will have to implement the MVCC timestamp ordering protocol described in the lecture.
+Here we gave you a verion of pseudocode, or you can write your own pseudocode
+and argue why it's better than the ones presented here (see analysis question 5).  
 
 Pseudocode for the algorithm to implement (in the RunMVCCScheduler method):
 
   while (true) {
     Start the garbage collection thread and start it running.
-    Get the next new transaction request (if one is pending) and start it running.
+    Get the next new transaction request (if one is pending) and pass it to an execution thread.
   }
   
   In the garbage collection thread:
@@ -193,13 +193,16 @@ Pseudocode for the algorithm to implement (in the RunMVCCScheduler method):
     }
     
   In the execution thread:
-    Start transaction running in its own thread.
+    Start transaction running
     Add the txn_id to the active_txn_id_set_;
+    Lock all keys in the write_set_
     Check the write_set_ to decide whether apply or abort the txn.(Call MVCCStorage::CheckWrite)
     If (pass the check)
       Apply the writes
+      Release all keys in the write_set_
       Erase the txn_id from active_txn_id_set_
     else if fail the check
+      Release all keys in the write_set_
       Cleanup txn
       Completely restart the transaction.
   
@@ -228,7 +231,7 @@ The OCC with serial validation is simpler than OCC with parallel validation.  Wh
 If you did not follow the given pseudocode for OCC with parallel validation, give your pseudocode and argue why it is better.
 
 5) MVCC
-Explain the performance difference between MVCC and other schemes for each workload. How does this compare to the expectations you had?
+Explain the performance difference between MVCC and other schemes for each workload. How does this compare to the expectations you had? If you wrote your own version, please explain why it's better than the ones presented here.
 
 ----------
 Submission
