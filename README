@@ -1,0 +1,245 @@
+CPSC 438,Assignment 2: Concurrency Control (Locking, OCC and MVCC)
+Lead TF: Kun Ren (Questions or clarification requests should be emailed to kun.ren@yale.edu)
+Please do take advantage of teaching fellow office hours if you have trouble understanding the code that we are providing you.
+Time:     Monday   3-5 PM
+          Thursday 7:30-9:30 PM
+Location: AKW 203
+ 
+ 
+------------------------------
+Understanding Locking and OCC
+------------------------------
+Before beginning this assignment, please be sure you have a clear understanding of the goals and challenges of concurrency control mechanisms in database systems. The paper you read for class (http://zoo.cs.yale.edu/classes/cs637/franklin97concurrency.pdf) provides a good introduction to this material.
+
+In this assignment you will be implementing five concurrency control schemes:
+  * two versions of locking schemes, both of which are considerably simpler than standard two-phase locking
+  * a version of OCC very similar to the serial-validation version described in the OCC paper you read for class (http://www.seas.upenn.edu/~zives/cis650/papers/opt-cc.pdf)
+  * a version of OCC somewhat similar to the parallel-validation version described in the OCC paper
+  * a version of MVCC timestamp Ordering scheme we talked about in the lecture
+ 
+
+---------
+Framework
+---------
+You'll be implementing these concurrency control schemes within a transaction processing framework that implements a simple, main-memory resident key-value store. This is a prototype system designed specially for this assignment, and may not be 100% perfect, so please watch for class emails in the coming weeks, as parts of this assignment may change slightly. Please report any bugs or problems to Kun Ren.
+
+To setup our framework, simply download the code. You'll see that it contains two subdirectories---'txn' and 'utils'. Nearly all of the source files you need to worry about are in the 'txn' subdirectory, though you might need to occasionally take a peek at a file or two in the 'util' subdirectory.
+
+To build and test the system, you can run
+  make test
+at any time. This will first compile the system; if this succeeds with no errors, it will also run two test scripts: one which performs some basic correctness tests of your lock manager implementation, and a second which profiles performance of the system. This second one takes a couple of minutes to run, but you can cancel it at any time by pressing ctrl-C.(Note that you can not pass the lock manager test currently until you complete the lock manager implementation.)
+
+Your submissions will be graded on code clarity as well correctness and efficiency. When implementing your solutions, please:
+
+  * Comment your header files & code thoroughly in the manner demonstrated in the rest of the framework.
+  * Organize your code logically.
+  * Use descriptive variable names.
+  * Use vertical and horizontal whitespace meaningfully and consistently.
+
+In this assignment, you will need to make changes to the following files/classes/methods:
+
+  txn/lock_manager.cc:
+    all methods (aside for the constructor and deconstructor) for classes 'LockManagerA' (Part 1A) and 'LockManagerB' (Part 1B)
+
+  txn/txn_processor.cc:
+    'TxnProcessor::RunOCCScheduler' method (Part 2)
+    'TxnProcessor::RunOCCParallelScheduler' method (Part 3)
+    'TxnProcessor::RunMVCCScheduler' method (Part 4)
+    
+  txn/mvcc_storage.cc:
+    'MVCCStorage::Read' method (Part 4)
+    'MVCCStorage::Write' method (Part 4)
+    'MVCCStorage::CheckWrite' method (Part 4)
+    'MVCCStorage::GarbageCollection' method (Part 4)
+    
+However, to understand what's going on in the framework, you will need to look through most of the files in the txn/ directory. We suggest looking first at the TxnProcessor object (txn/txn_processor.h) and in particular the 'TxnProcessor::RunSerialScheduler()' and 'TxnProcessor::RunLockingScheduler()' methods (txn/txn_processor.cc) and examining how it interacts with various objects in the system.
+
+Note: The framework relies heavily on the C++ standard template library (STL). If you have any questions about how to use the STL (it's really quite easy and friendly, I promise), please consult your search engine of choice.
+
+
+-----------------------------------------------------------
+Part 1A: Simple Locking (exclusive locks only)   10 points
+-----------------------------------------------------------
+Once you've looked through the code and are somewhat familiar with the overall structure and flow, you'll implement a simplified version of two-phase locking. The protocol goes like this:
+1) Upon entering the system, each transaction requests an EXCLUSIVE lock on EVERY item that it will either read or write.
+2) Wait until ALL locks are granted. This might be immediately, or the transaction might have to wait for earlier transactions to release their locks on the relevant keys.
+3) Execute program logic.
+4) Release ALL locks at commit/abort time.
+
+Two additional rules:
+A) Transactions must submit their entire set of lock requests ATOMICALLY. This means that if any of Txn A's lock requests is submitted before some lock request of Txn B, then ALL of Txn A's lock requests must be submitted before ANY of Txn B's. In practice, we do this by having a single thread do all concurrency control work.
+B) Each lock must be granted to transactions in the order that they requested it. So if Txn A and Txn B both requested a lock on the record with key "X", and A was the first to request the lock, then A must also be the first to be granted the lock.
+
+Note that the transaction's read and write sets are always declared up front in 'Txn::readset_' and 'Txn::writeset_'. When executing, txns are allowed to read records whose keys appear in EITHER its readset or its writeset, and it may write records whose keys appear in writeset.
+
+To help you get comfortable using the transaction processing framework, most of this algorithm is already implemented in 'TxnProcessor::RunLockingScheduler()'. Locks are requested and released at all the right times, and all necessary data structures for an efficient lock manager are already in place. All you need to do is implement the 'WriteLock', 'Release', and 'Status' methods in the class 'LockManagerA'.
+
+The test file 'txn/lock_manager_test.cc' provides some rudimentary correctness tests for your lock manager implementations, but additional tests may be added when we grade the assignment. We therefore suggest that you augment the tests with any additional cases you can think of that the existing tests do not cover.
+
+
+-------------------------------------------------------------------------
+Part 1B: Slightly Less Simple Locking (adding in shared locks)  15 points
+-------------------------------------------------------------------------
+To increase concurrency, we can allow transactions with overlapping readsets but disjoing writesets to execute concurrently. We do this by adding in SHARED locks. Again, all data structures already exist, and all you need to implement are the 'WriteLock', 'ReadLock', 'Release', and 'Status' methods in the class 'LockManagerB'.
+
+Again, 'txn/lock_manager_test.cc' profides some basic correctness tests, but you should go beyond these in checking the correctness of your implementation.
+
+
+---------------------------------------------------------------------------
+Part 2: Serial Optimistic Concurrency Control (OCC)   15 points
+---------------------------------------------------------------------------
+For OCC, you will have to implement the 'TxnProcessor::RunOCCScheduler' method.
+This is a simplified version of OCC compared to the one presented in the paper.
+
+Pseudocode for the OCC algorithm to implement (in the RunOCCScheduler method):
+
+  while (true) {
+    Get the next new transaction request (if one is pending) and start it running in the execution thread.
+    Deal with all transactions that have finished running.
+  }
+
+  In the execution thread:
+    Record start time.
+    Start transaction running in its own thread.
+
+  Dealing with a finished transaction:
+    // Validation phase:
+    for (each record whose key appears in the txn's read and write sets) {
+      if (the record was last updated AFTER this transaction's start time) {
+        Validation fails!
+      }
+    }
+
+    // Commit/restart
+    if (validation failed) {
+      Cleanup txn
+      Completely restart the transaction.
+    } else {
+      Apply all writes.
+      Mark transaction as committed.
+    }
+
+  cleanup txn:
+    txn->reads_.empty();
+    txn->writes_.empty();
+    txn->status_ = INCOMPLETE;
+       
+       
+-------------------------------------------------------------------------------
+Part 3: Optimistic Concurrency Control with Parallel Validation.  15 points
+-------------------------------------------------------------------------------
+OCC with parallel validation means that the validation step for OCC is done in parallel. There are several different ways to do the parallel validation -- here we give a simplified version of the pseudocode from the paper, or you can write your own pseudocode based on the paper's presentation of parallel validation and argue why it's better than the ones presented here (see analysis question).  
+
+The util/atomic.h file contains data structures that may be useful for this section.
+
+Pseudocode to implement in RunOCCParallelScheduler:
+
+  while (true) {
+    Get the next new transaction request (if one is pending) and start it running and doing the validation in the execution thread.
+  }
+
+  In the execution thread:
+    Record start time.
+    Start transaction running in its own thread.
+    Make a copy of the active set save it;
+    Add this transaction to the active set
+    Start validation phase.
+
+    Validation phase:    
+      for (each record whose key appears in the txn's read and write sets) {
+        if (the record was last updated AFTER this transaction's start time) {
+          Validation fails!
+        }
+      }
+
+      for (each txn t in the txn's copy of the active set) {
+        if (txn's write set intersects with t's read or write sets) {
+          Validation fails!
+        }
+      }
+
+      if valid :
+        Remove this transaction from the active set
+        Apply writes;
+        Mark transaction as committed;
+      else if validation failed:
+        Remove this transaction from the active set
+        Cleanup txn
+        Completely restart the transaction.
+        
+    cleanup txn:
+       txn->reads_.empty();
+       txn->writes_.empty();
+       txn->status_ = INCOMPLETE;    
+        
+
+--------------------------------------------------------------------------------
+Part 4: Multiversion Timestamp Ordering Concurrency Control.  25 points
+--------------------------------------------------------------------------------
+You will have to implement the MVCC timestamp ordering protocol described in the lecture.
+
+Pseudocode for the algorithm to implement (in the RunMVCCScheduler method):
+
+  while (true) {
+    Start the garbage collection thread and start it running.
+    Get the next new transaction request (if one is pending) and start it running.
+  }
+  
+  In the garbage collection thread:
+    while (tp_.Active()) {
+      Sleep some time and then do the garbage collection      
+      Get the oldest_txn from active_txn_id_set_
+      Call MVCCStorage::GarbageCollection(oldest_txn) to do the garbage collection
+    }
+    
+  In the execution thread:
+    Start transaction running in its own thread.
+    Add the txn_id to the active_txn_id_set_;
+    Check the write_set_ to decide whether apply or abort the txn.(Call MVCCStorage::CheckWrite)
+    If (pass the check)
+      Apply the writes
+      Erase the txn_id from active_txn_id_set_
+    else if fail the check
+      Cleanup txn
+      Completely restart the transaction.
+  
+  cleanup txn:
+    txn->reads_.empty();
+    txn->writes_.empty();
+    txn->status_ = INCOMPLETE;
+
+
+------------------------------------------------------------------------
+Part 4: Analysis   5 points for each response(2,3,4,5), total 20 points
+------------------------------------------------------------------------
+After implementing both locking schemes and both OCC schemes, please respond to the following questions in analysis.txt (text only, no formatting please).
+
+1) Carpe datum.
+Run 'make test' and report the performance numbers given by txn_processor_test. Please run this on a zoo machine. In particular, find one that is not being used by anyone else (run 'top' or 'uptime' to see current memory usage/CPU load). This is extremely important for reproducibility of results.
+
+2) Simulations are doomed to succeed.
+Transaction durations are accomplished simply by forcing the thread executing each transaction to sleep for approximately the amount of time specified. Why is this a good approximation of transaction costs in real systems? What problems are there with the approximation?  Suggest a better approximation of transaction costs that could be used.
+
+3) Locking manager
+Explain the performance difference between Locking A and Locking B. Neither of these locking schemes is very similar to standard two-phase locking. Compare and contrast Locking B with standard two-phase locking. How do you think two-phase locking would perform?
+
+4) OCCam's Razor
+The OCC with serial validation is simpler than OCC with parallel validation.  Which performs better in this simulation?  Why do you think that is the case?  How does this compare to the expectations you had?  How do you think they would compare in a real system?  What would be an optimal workload for each of them?
+If you did not follow the given pseudocode for OCC with parallel validation, give your pseudocode and argue why it is better.
+
+5) MVCC
+Explain the performance difference between MVCC and other schemes for each workload. How does this compare to the expectations you had?
+
+----------
+Submission
+----------
+What To Turn In
+
+  * analysis.txt --- Your responses to the analysis questions above
+  * files_changed.txt----List of files you changed
+  * hw2.tar.gz-----Entire codebase that contains all your code
+  * MY.PARTNERS --- Listing the other person that you worked with (undergraduates only).
+
+How to Submit
+
+  * Please submit the assignment via the assignments link on classes v2 according to the instructions there.
