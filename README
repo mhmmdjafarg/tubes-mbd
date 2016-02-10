@@ -213,7 +213,7 @@ Pseudocode for the algorithm to implement (in the RunMVCCScheduler method):
 
 
 ------------------------------------------------------------------------
-Part 4: Analysis   5 points for each response(2,3,4,5), total 20 points
+Part 4: Analysis   4 points for each response, total 20 points
 ------------------------------------------------------------------------
 After implementing both locking schemes and both OCC schemes, please respond to the following questions in analysis.txt (text only, no formatting please).
 
