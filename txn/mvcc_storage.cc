@@ -28,12 +28,12 @@ MVCCStorage::~MVCCStorage() {
   mutexs_.clear();
 }
 
-// Lock the version_list of key. Remember to lock the key when you read/update the version_list 
+// Lock the key to protect its version_list. Remember to lock the key when you read/update the version_list 
 void MVCCStorage::Lock(Key key) {
   mutexs_[key]->Lock();
 }
 
-// Unlock the version_list of key.
+// Unlock the key.
 void MVCCStorage::Unlock(Key key) {
   mutexs_[key]->Unlock();
 }
