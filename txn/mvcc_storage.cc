@@ -70,7 +70,7 @@ void MVCCStorage::Write(Key key, Value value, int txn_unique_id) {
   //
   // Implement this method!
   
-  // Hint: Insert a new version into the version_lists. Note that InitStorage()
+  // Hint: Insert a new version(malloc a Version and specify its value/version_id/max_read_id) into the version_lists. Note that InitStorage()
   // also calls this method to init storage.
 }
 
