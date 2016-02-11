@@ -102,6 +102,8 @@ class Txn {
   // Unique, monotonically increasing transaction ID, assigned by TxnProcessor.
   uint64 unique_id_;
 
+  bool read_only_;
+
   // Start time (used for OCC).
   double occ_start_time_;
 };

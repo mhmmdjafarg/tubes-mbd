@@ -111,6 +111,12 @@ class RMW : public Txn {
       } while (readset_.count(key) || writeset_.count(key));
       writeset_.insert(key);
     }
+
+    if (writesetsize == 0) {
+      read_only_ = true;
+    } else {
+      read_only_ = false;
+    }
   }
 
   RMW* clone() const {             // Virtual constructor (copying)

@@ -39,7 +39,7 @@ void MVCCStorage::Unlock(Key key) {
 }
 
 // MVCC Read
-bool MVCCStorage::Read(Key key, Value* result, int txn_unique_id) {
+bool MVCCStorage::Read(Key key, Value* result, int txn_unique_id, bool read_only) {
   // CPSC 438/538:
   //
   // Implement this method!

@@ -178,7 +178,7 @@ void TxnProcessor::ExecuteTxn(Txn* txn) {
        it != txn->readset_.end(); ++it) {
     // Save each read result iff record exists in storage.
     Value result;
-    if (storage_->Read(*it, &result, txn->unique_id_))
+    if (storage_->Read(*it, &result))
       txn->reads_[*it] = result;
   }
 
@@ -187,7 +187,7 @@ void TxnProcessor::ExecuteTxn(Txn* txn) {
        it != txn->writeset_.end(); ++it) {
     // Save each read result iff record exists in storage.
     Value result;
-    if (storage_->Read(*it, &result, txn->unique_id_))
+    if (storage_->Read(*it, &result))
       txn->reads_[*it] = result;
   }
 

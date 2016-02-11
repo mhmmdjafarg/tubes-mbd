@@ -60,10 +60,10 @@ class RMWLoadGen2 : public LoadGen {
     // 20% of transactions are READ only transactions and run for the full
     // transaction duration. The rest are very fast (< 0.1ms), high-contention
     // (65%+) updates.
-    if (rand() % 100 < 20)
+    if (rand() % 100 < 50)
       return new RMW(dbsize_, rsetsize_, 0, wait_time_);
     else
-      return new RMW(dbsize_, 0, wsetsize_, 0);
+      return new RMW(dbsize_, 0, wsetsize_, wait_time_);
   }
 
  private:
@@ -185,8 +185,20 @@ int main(int argc, char** argv) {
     delete lg[i];
   lg.clear();
 
-  //  20% of transactions are READ-ONLY and run for the transaction duration listed. The rest are very fast (< 0.1ms) high contention contention updates.
-  cout << "High contention mixed read only/write only" << endl;
+  cout << "100% High contention read/write" << endl;
+  lg.push_back(new RMWLoadGen(10, 0, 10, 0.0001));
+  lg.push_back(new RMWLoadGen(10, 0, 10, 0.001));
+  lg.push_back(new RMWLoadGen(10, 0, 10, 0.01));
+  lg.push_back(new RMWLoadGen(10, 0, 10, 0.1));
+
+  Benchmark(lg);
+
+  for (uint32 i = 0; i < lg.size(); i++)
+    delete lg[i];
+  lg.clear();
+
+  //  50% of transactions are READ-ONLY and 50% are read-write" 
+  cout << "High contention mixed read only/read-write" << endl;
   lg.push_back(new RMWLoadGen2(100, 20, 10, 0.0001));
   lg.push_back(new RMWLoadGen2(100, 20, 10, 0.001));
   lg.push_back(new RMWLoadGen2(100, 20, 10, 0.01));

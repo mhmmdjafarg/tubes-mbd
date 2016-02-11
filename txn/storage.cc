@@ -3,7 +3,7 @@
 
 #include "txn/storage.h"
 
-bool Storage::Read(Key key, Value* result, int txn_unique_id) {
+bool Storage::Read(Key key, Value* result, int txn_unique_id, bool read_only) {
   if (data_.count(key)) {
     *result = data_[key];
     return true;
