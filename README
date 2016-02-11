@@ -139,8 +139,10 @@ Pseudocode to implement in RunOCCParallelScheduler:
   In the execution thread:
     Record start time
     Start transaction running.
+    <Critical section>
     Make a copy of the active set save it
     Add this transaction to the active set
+    <Critical section>
     Start validation phase
 
     Validation phase:    
@@ -157,8 +159,8 @@ Pseudocode to implement in RunOCCParallelScheduler:
       }
 
       if valid :
-        Remove this transaction from the active set
         Apply writes;
+        Remove this transaction from the active set
         Mark transaction as committed;
       else if validation failed:
         Remove this transaction from the active set
