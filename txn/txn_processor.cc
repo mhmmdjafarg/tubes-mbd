@@ -10,7 +10,7 @@
 #include "txn/lock_manager.h"
 
 // Thread & queue counts for StaticThreadPool initialization.
-#define THREAD_COUNT 10
+#define THREAD_COUNT 8
 
 TxnProcessor::TxnProcessor(CCMode mode)
     : mode_(mode), tp_(THREAD_COUNT), next_unique_id_(1) {
@@ -28,13 +28,18 @@ TxnProcessor::TxnProcessor(CCMode mode)
   
   storage_->InitStorage();
 
-  // Start 'RunScheduler()' running in its own thread (pin to CPU Core 7).
+  // Start 'RunScheduler()' running.
   cpu_set_t cpuset;
   pthread_attr_t attr;
   pthread_attr_init(&attr);
   CPU_ZERO(&cpuset);
-
-  CPU_SET(7, &cpuset);
+  CPU_SET(0, &cpuset);
+  CPU_SET(1, &cpuset);       
+  CPU_SET(2, &cpuset);
+  CPU_SET(3, &cpuset);
+  CPU_SET(4, &cpuset);
+  CPU_SET(5, &cpuset);
+  CPU_SET(6, &cpuset);  
   pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpuset);
   pthread_t scheduler_;
   pthread_create(&scheduler_, &attr, StartScheduler, reinterpret_cast<void*>(this));

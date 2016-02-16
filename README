@@ -180,7 +180,7 @@ For MVCC, you will have to implement the 'TxnProcessor::RunMVCCScheduler' method
 
 Although we give you a version of pseudocode, if you want, you can write your own pseudocode and argue why it's better than the code presented here (see analysis question 5). 
 
-In addition you will have to implement the MVCCStorage::Read, MVCCStorage::Write, MVCCStorage::CheckWrite, and the MVCCStorage::GarbageCollection methods.
+In addition you will have to implement the MVCCStorage::Read, MVCCStorage::Write, MVCCStorage::CheckWrite.
 
 
 Pseudocode for the algorithm to implement (in the RunMVCCScheduler method):
@@ -190,15 +190,13 @@ Pseudocode for the algorithm to implement (in the RunMVCCScheduler method):
   }
 
   In the execution thread:
-    Start transaction running(Note that you should lock the key even for read)
-    Add the txn_id to the active_txn_id_set_
+    Start transaction running(Note that you should lock the key before read)
     Acquire all locks for keys in the write_set_
     Call MVCCStorage::CheckWrite method to check all keys in the write_set_ to decide whether commit or abort the txn
     If (pass the check)
       Apply the writes
       Release all locks for keys in the write_set_
-      Erase the txn_id from active_txn_id_set_
-    else if fail the check
+    else if (fail the check)
       Release all locks for keys in the write_set_
       Cleanup txn
       Completely restart the transaction.
@@ -236,7 +234,7 @@ Submission
 What To Turn In
 
   * analysis.txt --- Your responses to the analysis questions above
-  * files_changed.txt----List of files you changed
+  * files_changed.txt----List of files you changed and what did you change
   * hw2.tar.gz-----Entire codebase that contains all your code
   * MY.PARTNERS --- Listing the other person that you worked with (undergraduates only).
 
