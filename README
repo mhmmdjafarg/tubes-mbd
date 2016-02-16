@@ -1,7 +1,7 @@
-CPSC 438,Assignment 2: Concurrency Control (Locking, OCC and MVCC)
+CPSC 438, Assignment 2: Concurrency Control (Locking, OCC and MVCC)
 Lead TF: Kun Ren (Questions or clarification requests should be emailed to kun.ren@yale.edu)
 
-Please do take advantage of teaching fellow office hours if you have trouble understanding the code that we are providing you.
+Please take advantage of teaching fellow office hours if you have trouble understanding the code that we are providing you or have other questions about the assignment.
 Time:     Monday   7:30-9:30 PM
           Thursday 7:30-9:30 PM
 Location: AKW 203
@@ -16,7 +16,7 @@ In this assignment you will be implementing five concurrency control schemes:
   * two versions of locking schemes, both of which are considerably simpler than standard two-phase locking
   * a version of OCC very similar to the serial-validation version described in the OCC paper you read for class (http://www.seas.upenn.edu/~zives/cis650/papers/opt-cc.pdf)
   * a version of OCC somewhat similar to the parallel-validation version described in the OCC paper
-  * a version of MVCC timestamp Ordering scheme we talked about in the lecture
+  * a version of MVCC timestamp ordering scheme based on the paper we read for class on this topic.
  
 
 ---------
@@ -36,6 +36,7 @@ Your submissions will be graded on code clarity as well correctness and efficien
   * Use descriptive variable names.
 
 In this assignment, you will need to make changes to the following files/classes/methods:
+
   txn/lock_manager.cc:
     all methods (aside for the constructor and deconstructor) for classes 'LockManagerA' (Part 1A) and 'LockManagerB' (Part 1B)
 
@@ -66,7 +67,7 @@ Once you've looked through the code and are somewhat familiar with the overall s
 
 Two additional rules:
 A) Transactions must submit their entire set of lock requests ATOMICALLY. This means that if any of Txn A's lock requests is submitted before some lock request of Txn B, then ALL of Txn A's lock requests must be submitted before ANY of Txn B's. In practice, we do this by having a single thread do all concurrency control work.
-B) Each lock must be granted to transactions in the order that they requested it. So if Txn A and Txn B both requested a lock on the record with key "X", and A was the first to request the lock, then A must also be the first to be granted the lock.
+B) Each lock must be granted to transactions in the order that they requested it. So if Txn A and Txn B both requested a lock on the record with key "X", and A was the first to request the lock, then A must also be the first to be granted the lock (this allows us to not have to worry about deadlock).
 
 Note that the transaction's read and write sets are always declared up front in 'Txn::readset_' and 'Txn::writeset_'. When executing, txns are allowed to read records whose keys appear in EITHER its readset or its writeset, and it may write records whose keys appear in writeset.
 
@@ -96,11 +97,11 @@ Pseudocode for the OCC algorithm to implement (in the RunOCCScheduler method):
     Deal with all transactions that have finished running.
   }
 
-  In the execution thread:
+  In the execution thread (we are providing you this code):
     Record start time
-    Start transaction running
+    Perform "read phase" of transaction (do all reads and writes to a local buffer)
 
-  Dealing with a finished transaction:
+  Dealing with a finished transaction (you must write this code):
     // Validation phase:
     for (each record whose key appears in the txn's read and write sets) {
       if (the record was last updated AFTER this transaction's start time) {
@@ -126,26 +127,24 @@ Pseudocode for the OCC algorithm to implement (in the RunOCCScheduler method):
 -------------------------------------------------------------------------------
 Part 3: Optimistic Concurrency Control with Parallel Validation.  15 points
 -------------------------------------------------------------------------------
-OCC with parallel validation means that the validation step for OCC is done in parallel. There are several different ways to do the parallel validation -- here we give a simplified version of the pseudocode from the paper, or you can write your own pseudocode based on the paper's presentation of parallel validation and argue why it's better than the ones presented here (see analysis question 4).  
+OCC with parallel validation means that the validation/write steps for OCC are done in parallel across transactions. There are several different ways to do the parallel validation -- here we give a simplified version of the pseudocode from the paper, or you can write your own pseudocode based on the paper's presentation of parallel validation and argue why it's better than the ones presented here (see analysis question 4). 
 
 The util/atomic.h file contains data structures that may be useful for this section.
 
 Pseudocode to implement in RunOCCParallelScheduler:
 
   while (true) {
-    Get the next new transaction request (if one is pending) and pass it to an execution thread that executes the txn logic and does the validation.
+    Get the next new transaction request (if one is pending) and pass it to an execution thread that executes the txn logic *and also* does the validation and write phases.
   }
 
   In the execution thread:
     Record start time
-    Start transaction running.
-    <Critical section>
+    Perform "read phase" of transaction (do all reads and do writes to a local buffer)
+    <Start of critical section>
     Make a copy of the active set save it
     Add this transaction to the active set
-    <Critical section>
-    Start validation phase
-
-    Validation phase:    
+    <End of critical section>
+    Do validation phase:    
       for (each record whose key appears in the txn's read and write sets) {
         if (the record was last updated AFTER this transaction's start time) {
           Validation fails!
@@ -176,9 +175,13 @@ Pseudocode to implement in RunOCCParallelScheduler:
 --------------------------------------------------------------------------------
 Part 4: Multiversion Timestamp Ordering Concurrency Control.  25 points
 --------------------------------------------------------------------------------
-You will have to implement the MVCC timestamp ordering protocol described in the lecture.
-Here we gave you a version of pseudocode, or you can write your own pseudocode
-and argue why it's better than the ones presented here (see analysis question 5).  
+For MVCC, you will have to implement the 'TxnProcessor::RunMVCCScheduler' method
+ based on the pseudocode below. The pseudocode implements the MVCC timestamp ordering protocol from the paper that we read for class. 
+
+Although we give you a version of pseudocode, if you want, you can write your own pseudocode and argue why it's better than the code presented here (see analysis question 5). 
+
+In addition you will have to implement the MVCCStorage::Read, MVCCStorage::Write, MVCCStorage::CheckWrite, and the MVCCStorage::GarbageCollection methods.
+
 
 Pseudocode for the algorithm to implement (in the RunMVCCScheduler method):
 
