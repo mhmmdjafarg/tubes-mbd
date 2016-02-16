@@ -4,7 +4,7 @@
 
 // Init the storage
 void MVCCStorage::InitStorage() {
-  for (int i = 0; i < 10000;i++) {
+  for (int i = 0; i < 1000000;i++) {
     Write(i, 0, 0);
     Mutex* key_mutex = new Mutex();
     mutexs_[i] = key_mutex;
@@ -39,7 +39,7 @@ void MVCCStorage::Unlock(Key key) {
 }
 
 // MVCC Read
-bool MVCCStorage::Read(Key key, Value* result, int txn_unique_id, bool read_only) {
+bool MVCCStorage::Read(Key key, Value* result, int txn_unique_id) {
   // CPSC 438/538:
   //
   // Implement this method!
@@ -73,20 +73,5 @@ void MVCCStorage::Write(Key key, Value value, int txn_unique_id) {
   // Hint: Insert a new version(malloc a Version and specify its value/version_id/max_read_id) into the version_lists. Note that InitStorage()
   // also calls this method to init storage.
 }
-
-
-// Iterate the database to erase the old versions
-void MVCCStorage::GarbageCollection(int oldest_txn) {
-  // CPSC 438/538:
-  //
-  // Implement this method!
-  
-  // Hint: Iterate the storage(mvcc_data_) to erase the old versions. The idea
-  // is that if the oldest_txn is 9, and the version_lists contains the following verion_ids:
-  // 12, 10, 8, 7, 6, 5, 4, 3, 2, 1, and the oldest_txn will never have to read
-  // verions from 1 to 7, so we can erase them(and free the memory).
-  
-}
-
 
 

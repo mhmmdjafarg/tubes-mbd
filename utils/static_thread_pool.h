@@ -1,5 +1,6 @@
 /// @file
 /// @author Alexander Thomson <thomson@cs.yale.edu>
+// Modified by: Kun Ren (kun.ren@yale.edu)
 
 #ifndef _DB_UTILS_STATIC_THREAD_POOL_H_
 #define _DB_UTILS_STATIC_THREAD_POOL_H_
@@ -10,25 +11,23 @@
 #include <queue>
 #include <string>
 #include <vector>
+#include <utility>
 #include "utils/atomic.h"
 #include "utils/thread_pool.h"
 
 using std::queue;
 using std::string;
 using std::vector;
+using std::pair;
 
 //
 class StaticThreadPool : public ThreadPool {
  public:
   StaticThreadPool(int nthreads)
-      : thread_count_(nthreads), queue_count_(nthreads), stopped_(false) {
+      : thread_count_(nthreads), stopped_(false) {
     Start();
   }
 
-  StaticThreadPool(int nthreads, int nqueues)
-      : thread_count_(nthreads), queue_count_(nqueues), stopped_(false) {
-    Start();
-  }
 
   ~StaticThreadPool() {
     stopped_ = true;
@@ -40,7 +39,7 @@ class StaticThreadPool : public ThreadPool {
 
   virtual void RunTask(Task* task) {
     assert(!stopped_);
-    while (!queues_[rand() % queue_count_].PushNonBlocking(task)) {}
+    while (!queues_[rand() % thread_count_].PushNonBlocking(task)) {}
   }
 
   virtual int ThreadCount() { return thread_count_; }
@@ -48,22 +47,37 @@ class StaticThreadPool : public ThreadPool {
  private:
   void Start() {
     threads_.resize(thread_count_);
-    queues_.resize(queue_count_);
+    queues_.resize(thread_count_);
+    
+    cpu_set_t cpuset;
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    CPU_ZERO(&cpuset);
+    CPU_SET(0, &cpuset);
+    CPU_SET(1, &cpuset);       
+    CPU_SET(2, &cpuset);
+    CPU_SET(3, &cpuset);
+    CPU_SET(4, &cpuset);
+    CPU_SET(5, &cpuset);            
+    pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpuset);
+
     for (int i = 0; i < thread_count_; i++) {
       pthread_create(&threads_[i],
-                     NULL,
+                     &attr,
                      RunThread,
-                     reinterpret_cast<void*>(this));
+                     reinterpret_cast<void*>(new pair<int, StaticThreadPool*>(i, this)));
     }
   }
 
   // Function executed by each pthread.
   static void* RunThread(void* arg) {
-    StaticThreadPool* tp = reinterpret_cast<StaticThreadPool*>(arg);
+    int queue_id = reinterpret_cast<pair<int, StaticThreadPool*>*>(arg)->first;
+    StaticThreadPool* tp = reinterpret_cast<pair<int, StaticThreadPool*>*>(arg)->second;
+    
     Task* task;
     int sleep_duration = 1;  // in microseconds
     while (true) {
-      if (tp->queues_[rand() % tp->queue_count_].PopNonBlocking(&task)) {
+      if (tp->queues_[queue_id].PopNonBlocking(&task)) {
         task->Run();
         delete task;
         // Reset backoff.
@@ -77,20 +91,12 @@ class StaticThreadPool : public ThreadPool {
 
       if (tp->stopped_) {
         // Go through ALL queues looking for a remaining task.
-        bool found_task = false;
-        int start = rand() % tp->queue_count_;
-        for (int i = 0; i < tp->queue_count_; i++) {
-          if (tp->queues_[(start + i) % tp->queue_count_].Pop(&task)) {
-            found_task = true;
+        while (tp->queues_[queue_id].Pop(&task)) {
             task->Run();
             delete task;
-            break;
-          }
         }
-        if (!found_task) {
-          // All queues are empty.
-          break;
-        }
+
+        break;
       }
     }
     return NULL;
@@ -100,7 +106,6 @@ class StaticThreadPool : public ThreadPool {
   vector<pthread_t> threads_;
 
   // Task queues.
-  int queue_count_;
   vector<AtomicQueue<Task*> > queues_;
 
   bool stopped_;

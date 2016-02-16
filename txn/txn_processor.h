@@ -56,12 +56,18 @@ class TxnProcessor {
   // ownership of the returned Txn.
   Txn* GetTxnResult();
 
- private:
   // Main loop implementing all concurrency control/thread scheduling.
   void RunScheduler();
+  
+  static void* StartScheduler(void * arg);
+  
+ private:
 
   // Serial validation
   bool SerialValidate(Txn *txn);
+
+  // Parallel executtion/validation for OCC
+  void ExecuteTxnParallel(Txn *txn);
 
   // Serial version of scheduler.
   void RunSerialScheduler();
@@ -86,6 +92,17 @@ class TxnProcessor {
   //
   // Requires: txn->Status() is COMPLETED_C.
   void ApplyWrites(Txn* txn);
+  
+  // The following functions are for MVCC
+  void MVCCExecuteTxn(Txn* txn);
+    
+  bool MVCCCheckWrites(Txn* txn);
+
+  void MVCCLockWriteKeys(Txn* txn);
+
+  void MVCCUnlockWriteKeys(Txn* txn);
+  
+  void GarbageCollection();
   
   // Concurrency control mechanism the TxnProcessor is currently using.
   CCMode mode_;
@@ -118,9 +135,10 @@ class TxnProcessor {
   
   // Set of transactions that are currently in the process of parallel
   // validation.
-  AtomicSet<Txn*> active_set_;  
+  AtomicSet<Txn*> active_set_;
+  Mutex active_set_mutex_;  // Used it for parallel occ
   
-  // For MVCC to keep track of the oldest txn_id
+  // For MVCC to find the oldest txn_id
   AtomicSet<uint64> active_txn_id_set_;
 
   // Lock Manager used for LOCKING concurrency implementations.

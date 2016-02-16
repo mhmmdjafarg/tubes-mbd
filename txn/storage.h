@@ -23,7 +23,7 @@ class Storage {
   // If there exists a record for the specified key, sets '*result' equal to
   // the value associated with the key and returns true, else returns false;
   // Note that the third parameter is only used for MVCC, the default vaule is 0.
-  virtual bool Read(Key key, Value* result, int txn_unique_id = 0, bool read_only = false);
+  virtual bool Read(Key key, Value* result, int txn_unique_id = 0);
 
   // Inserts the record <key, value>, replacing any previous record with the
   // same key.
@@ -45,8 +45,6 @@ class Storage {
   virtual void Unlock(Key key) {}
   
   virtual bool CheckWrite (Key key, int txn_unique_id) {return true;}
-  
-  virtual void GarbageCollection(int oldest_txn) {}
    
  private:
  

@@ -10,11 +10,10 @@
 #include "txn/lock_manager.h"
 
 // Thread & queue counts for StaticThreadPool initialization.
-#define THREAD_COUNT 20
-#define QUEUE_COUNT  10
+#define THREAD_COUNT 10
 
 TxnProcessor::TxnProcessor(CCMode mode)
-    : mode_(mode), tp_(THREAD_COUNT, QUEUE_COUNT), next_unique_id_(1) {
+    : mode_(mode), tp_(THREAD_COUNT), next_unique_id_(1) {
   if (mode_ == LOCKING_EXCLUSIVE_ONLY)
     lm_ = new LockManagerA(&ready_txns_);
   else if (mode_ == LOCKING)
@@ -29,9 +28,22 @@ TxnProcessor::TxnProcessor(CCMode mode)
   
   storage_->InitStorage();
 
-  // Start 'RunScheduler()' running as a new task in its own thread.
-  tp_.RunTask(
-        new Method<TxnProcessor, void>(this, &TxnProcessor::RunScheduler));
+  // Start 'RunScheduler()' running in its own thread (pin to CPU Core 7).
+  cpu_set_t cpuset;
+  pthread_attr_t attr;
+  pthread_attr_init(&attr);
+  CPU_ZERO(&cpuset);
+
+  CPU_SET(7, &cpuset);
+  pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpuset);
+  pthread_t scheduler_;
+  pthread_create(&scheduler_, &attr, StartScheduler, reinterpret_cast<void*>(this));
+  
+}
+
+void* TxnProcessor::StartScheduler(void * arg) {
+  reinterpret_cast<TxnProcessor *>(arg)->RunScheduler();
+  return NULL;
 }
 
 TxnProcessor::~TxnProcessor() {
@@ -102,25 +114,57 @@ void TxnProcessor::RunLockingScheduler() {
   while (tp_.Active()) {
     // Start processing the next incoming transaction request.
     if (txn_requests_.Pop(&txn)) {
-      int blocked = 0;
+      bool blocked = false;
       // Request read locks.
       for (set<Key>::iterator it = txn->readset_.begin();
            it != txn->readset_.end(); ++it) {
-        if (!lm_->ReadLock(txn, *it))
-          blocked++;
+        if (!lm_->ReadLock(txn, *it)) {
+          blocked = true;
+          // Release all locks that already acquired
+          for (set<Key>::iterator it_reads = txn->readset_.begin(); true; ++it_reads) {
+            lm_->Release(txn, *it_reads);
+            if (it_reads == it) {
+              break;
+            }
+          }
+          break;
+        }
       }
-
-      // Request write locks.
-      for (set<Key>::iterator it = txn->writeset_.begin();
-           it != txn->writeset_.end(); ++it) {
-        if (!lm_->WriteLock(txn, *it))
-          blocked++;
+          
+      if (blocked == false) {
+        // Request write locks.
+        for (set<Key>::iterator it = txn->writeset_.begin();
+             it != txn->writeset_.end(); ++it) {
+          if (!lm_->WriteLock(txn, *it)) {
+            blocked = true;
+            
+            // Release all read locks that already acquired
+            for (set<Key>::iterator it_reads = txn->readset_.begin(); it_reads != txn->readset_.end(); ++it_reads) {
+              lm_->Release(txn, *it_reads);
+            }
+            // Release all write locks that already acquired
+            for (set<Key>::iterator it_writes = txn->writeset_.begin(); true; ++it_writes) {
+              lm_->Release(txn, *it_writes);
+              if (it_writes == it) {
+                break;
+              }
+            }
+            break;
+          }
+        }
       }
 
       // If all read and write locks were immediately acquired, this txn is
-      // ready to be executed.
-      if (blocked == 0)
+      // ready to be executed. Else, just restart the txn
+      if (blocked == false) {
         ready_txns_.push_back(txn);
+      } else {
+        mutex_.Lock();
+        txn->unique_id_ = next_unique_id_;
+        next_unique_id_++;
+        txn_requests_.Push(txn);
+        mutex_.Unlock(); 
+      }
     }
 
     // Process and commit all transactions that have finished running.
@@ -234,10 +278,8 @@ void TxnProcessor::RunMVCCScheduler() {
   //
   // Implement this method!
   
-  // Hint: First start GarbageCollection thread. Then Pop a txn from txn_requests_,
-  // and pass it to a thread to execute. Note that you may need to create another method, like
-  // TxnProcessor::MVCCExecuteTxn. You can use the active_txn_id_set_ defined in
-  // the txn_processor.h to keep track of the oldest txn id.
+  // Hint:Pop a txn from txn_requests_, and pass it to a thread to execute. 
+  // Note that you may need to create execute method, like TxnProcessor::MVCCExecuteTxn. 
   //
   // [For now, run serial scheduler in order to make it through the test
   // suite]

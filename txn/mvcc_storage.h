@@ -18,7 +18,7 @@ class MVCCStorage : public Storage {
   // If there exists a record for the specified key, sets '*result' equal to
   // the value associated with the key and returns true, else returns false;
   // The third parameter is the txn_unique_id(txn timestamp).
-  virtual bool Read(Key key, Value* result, int txn_unique_id = 0, bool read_only = false);
+  virtual bool Read(Key key, Value* result, int txn_unique_id = 0);
 
   // Inserts a new version with key and value
   // The third parameter is the txn_unique_id(txn timestamp).
@@ -39,9 +39,6 @@ class MVCCStorage : public Storage {
   
   // Check whether apply or abort the write
   virtual bool CheckWrite (Key key, int txn_unique_id);
-  
-  // Garbage collection for MVCC
-  virtual void GarbageCollection(int oldest_txn);
   
   virtual ~MVCCStorage();
 

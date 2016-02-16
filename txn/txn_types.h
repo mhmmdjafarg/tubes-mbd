@@ -1,4 +1,5 @@
 // Author: Alexander Thomson (thomson@cs.yale.edu)
+// Modified by: Kun Ren (kun.ren@yale.edu)
 
 #ifndef _TXN_TYPES_H_
 #define _TXN_TYPES_H_
@@ -111,12 +112,6 @@ class RMW : public Txn {
       } while (readset_.count(key) || writeset_.count(key));
       writeset_.insert(key);
     }
-
-    if (writesetsize == 0) {
-      read_only_ = true;
-    } else {
-      read_only_ = false;
-    }
   }
 
   RMW* clone() const {             // Virtual constructor (copying)
@@ -139,8 +134,16 @@ class RMW : public Txn {
       Write(*it, result + 1);
     }
 
-    // Wait a random amount of time (averaging time_) before committing.
-    Sleep(0.9 * time_ + RandomDouble(time_ * 0.2));
+    // Run while loop to simulate the txn logic.
+    double begin = GetTime();
+    while (GetTime() - begin < time_) {
+      for (int i = 0;i < 1000; i++) {
+        int x = 100;
+        x = x + 2;
+        x = x*x;
+      }
+    }
+    
     COMMIT;
   }
 
