@@ -28,7 +28,7 @@ To setup our framework, simply download the code(run: git clone https://github.c
 
 To build and test the system, you can run
   make test
-at any time. This will first compile the system; if this succeeds with no errors, it will also run two test scripts: one which performs some basic correctness tests of your lock manager implementation, and a second which profiles performance of the system. This second one takes a couple of minutes to run, but you can cancel it at any time by pressing ctrl-C.(Note that you can not pass the lock manager test right now until you complete the lock manager implementation.)
+at any time. This will first compile the system; if this succeeds with no errors, it will also run two test scripts: one which performs some basic correctness tests of your lock manager implementation, and a second which profiles performance of the system. This second one takes a number of minutes to run, but you can cancel it at any time by pressing ctrl-C.(Note that you can not pass the lock manager test right now until you complete the lock manager implementation.)
 
 Your submissions will be graded on code clarity as well correctness and efficiency. When implementing your solutions, please:
   * Comment your header files & code thoroughly in the manner demonstrated in the rest of the framework.
@@ -60,17 +60,15 @@ Part 1A: Simple Locking (exclusive locks only)   10 points
 -----------------------------------------------------------
 Once you've looked through the code and are somewhat familiar with the overall structure and flow, you'll implement a simplified version of two-phase locking. The protocol goes like this:
 1) Upon entering the system, each transaction requests an EXCLUSIVE lock on EVERY item that it will either read or write.
-2) Wait until ALL locks are granted. This might be immediately, or the transaction might have to wait for earlier transactions to release their locks on the relevant keys.
-3) Execute program logic.
+2) If any lock request is denied:
+   2a) If the entire transaction involves just a single read or write request, then have the transaction simply wait until the request is granted and then proceed to step (3).
+   2b) Otherwise, immediately release all locks that were granted before this denial, and immediately abort and queue the transaction for restart at a later point.
+3) (We only get to this point if we didn't get to step (2b) which aborts the transaction.) Execute the program logic.
 4) Release ALL locks at commit/abort time.
 
-Two additional rules:
-A) Transactions must submit their entire set of lock requests ATOMICALLY. This means that if any of Txn A's lock requests is submitted before some lock request of Txn B, then ALL of Txn A's lock requests must be submitted before ANY of Txn B's. In practice, we do this by having a single thread do all concurrency control work.
-B) Each lock must be granted to transactions in the order that they requested it. So if Txn A and Txn B both requested a lock on the record with key "X", and A was the first to request the lock, then A must also be the first to be granted the lock (this allows us to not have to worry about deadlock).
+In order to avoid the complexities of creating a thread-safe lock manager in this assignment, our implementation only has a single thread that manages the state of the lock manager. This thread performs all the lock requests on behalf of the transactions and then hands over control to a separate execution thread in step (3) above. Note that for workloads where transactions make heavy use of the lock manager, this single lock manager thread may become a performance bottleneck as it has to request and release locks on behalf of ALL transactions.
 
-Note that the transaction's read and write sets are always declared up front in 'Txn::readset_' and 'Txn::writeset_'. When executing, txns are allowed to read records whose keys appear in EITHER its readset or its writeset, and it may write records whose keys appear in writeset.
-
-To help you get comfortable using the transaction processing framework, most of this algorithm is already implemented in 'TxnProcessor::RunLockingScheduler()'. Locks are requested and released at all the right times, and all necessary data structures for an efficient lock manager are already in place. All you need to do is implement the 'WriteLock', 'Release', and 'Status' methods in the class 'LockManagerA'.
+To help you get comfortable using the transaction processing framework, most of this algorithm is already implemented in 'TxnProcessor::RunLockingScheduler()'. Locks are requested and released at all the right times, and all necessary data structures for an efficient lock manager are already in place. All you need to do is implement the 'WriteLock', 'Release', and 'Status' methods in the class 'LockManagerA'. Make sure you look at the file lock_manager.h which explains the data structures that you will be using to queue up requests for locks in the lock manager.
 
 The test file 'txn/lock_manager_test.cc' provides some rudimentary correctness tests for your lock manager implementations, but additional tests may be added when we grade the assignment. We therefore suggest that you augment the tests with any additional cases you can think of that the existing tests do not cover.
 
