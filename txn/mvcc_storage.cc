@@ -57,9 +57,11 @@ bool MVCCStorage::CheckWrite(Key key, int txn_unique_id) {
   //
   // Implement this method!
   
-  // Hint: Before apply write, you should check whether we should apply or abort the write
-  // based on MVCC timestamp ordering protocol. Return true if we can apply the
-  // write, return false if we should abort the write.
+  // Hint: Before finally apply all writes, we should make sure that each write
+  // can be safely applied based on MVCC timestamp ordering protocol. This method
+  // only check one key, so you can should call this method for each key in the
+  // write_set. Return true if pass the check, return false if not.
+  
   
   return true;
 }

@@ -7,9 +7,9 @@
 
 // MVCC 'version' structure
 struct Version {
-  Value value_;
-  int max_read_id_;
-  int version_id_;
+  Value value_;      // The value of this version
+  int max_read_id_;  // Largest timestamp of a transaction that read the version
+  int version_id_;   // Timestamp of the transaction that created(wrote) the version
 };
 
 // MVCC storage

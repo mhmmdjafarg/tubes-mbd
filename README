@@ -192,15 +192,13 @@ Pseudocode for the algorithm to implement (in the RunMVCCScheduler method):
   }
 
   In the execution thread:
-    Start transaction running(Note that you should lock the key even for read)
-    Add the txn_id to the active_txn_id_set_
+    Start transaction running(Note that you should lock the key before read)
     Acquire all locks for keys in the write_set_
     Call MVCCStorage::CheckWrite method to check all keys in the write_set_ to decide whether commit or abort the txn
     If (pass the check)
       Apply the writes
       Release all locks for keys in the write_set_
-      Erase the txn_id from active_txn_id_set_
-    else if fail the check
+    else if (fail the check)
       Release all locks for keys in the write_set_
       Cleanup txn
       Completely restart the transaction.

@@ -1,4 +1,5 @@
 // Author: Alexander Thomson (thomson@cs.yale.edu)
+// Modified by: Kun Ren (kun.ren@yale.edu)
 //
 // Interface for lock managers in the system.
 
