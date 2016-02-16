@@ -48,7 +48,6 @@ In this assignment, you will need to make changes to the following files/classes
     'MVCCStorage::Read' method (Part 4)
     'MVCCStorage::Write' method (Part 4)
     'MVCCStorage::CheckWrite' method (Part 4)
-    'MVCCStorage::GarbageCollection' method (Part 4)
     
 However, to understand what's going on in the framework, you will need to look through most of the files in the txn/ directory. We suggest looking first at the TxnProcessor object (txn/txn_processor.h) and in particular the 'TxnProcessor::RunSerialScheduler()' and 'TxnProcessor::RunLockingScheduler()' methods (txn/txn_processor.cc) and examining how it interacts with various objects in the system.
 
