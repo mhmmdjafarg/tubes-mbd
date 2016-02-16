@@ -182,7 +182,7 @@ For MVCC, you will have to implement the 'TxnProcessor::RunMVCCScheduler' method
 
 Although we give you a version of pseudocode, if you want, you can write your own pseudocode and argue why it's better than the code presented here (see analysis question 5). 
 
-In addition you will have to implement the MVCCStorage::Read, MVCCStorage::Write, MVCCStorage::CheckWrite, and the MVCCStorage::GarbageCollection methods.
+In addition you will have to implement the MVCCStorage::Read, MVCCStorage::Write, MVCCStorage::CheckWrite.
 
 
 Pseudocode for the algorithm to implement (in the RunMVCCScheduler method):
@@ -236,7 +236,7 @@ Submission
 What To Turn In
 
   * analysis.txt --- Your responses to the analysis questions above
-  * files_changed.txt----List of files you changed
+  * files_changed.txt----List of files you changed and what did you change
   * hw2.tar.gz-----Entire codebase that contains all your code
   * MY.PARTNERS --- Listing the other person that you worked with (undergraduates only).
 
