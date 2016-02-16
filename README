@@ -156,6 +156,9 @@ Pseudocode to implement in RunOCCParallelScheduler:
         if (txn's write set intersects with t's read or write sets) {
           Validation fails!
         }
+        if (txn's read set intersects with t's write sets) {
+          Validation fails!
+        }
       }
 
       if valid :
@@ -182,18 +185,10 @@ and argue why it's better than the ones presented here (see analysis question 5)
 
 Pseudocode for the algorithm to implement (in the RunMVCCScheduler method):
 
- Start the garbage collection thread and start it running.
   while (true) {
     Get the next new transaction request (if one is pending) and pass it to an execution thread.
   }
-  
-  In the garbage collection thread:
-    while (tp_.Active()) {
-      Sleep some time and then do the garbage collection      
-      Get the oldest_txn from active_txn_id_set_
-      Call MVCCStorage::GarbageCollection(oldest_txn) to do the garbage collection
-    }
-    
+
   In the execution thread:
     Start transaction running(Note that you should lock the key even for read)
     Add the txn_id to the active_txn_id_set_
