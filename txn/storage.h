@@ -45,8 +45,6 @@ class Storage {
   virtual void Unlock(Key key) {}
   
   virtual bool CheckWrite (Key key, int txn_unique_id) {return true;}
-  
-  virtual void GarbageCollection(int oldest_txn) {}
    
  private:
  

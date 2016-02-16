@@ -40,9 +40,6 @@ class MVCCStorage : public Storage {
   // Check whether apply or abort the write
   virtual bool CheckWrite (Key key, int txn_unique_id);
   
-  // Garbage collection for MVCC
-  virtual void GarbageCollection(int oldest_txn);
-  
   virtual ~MVCCStorage();
 
  private:
