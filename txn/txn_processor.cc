@@ -125,14 +125,17 @@ void TxnProcessor::RunLockingScheduler() {
            it != txn->readset_.end(); ++it) {
         if (!lm_->ReadLock(txn, *it)) {
           blocked = true;
-          // Release all locks that already acquired
-          for (set<Key>::iterator it_reads = txn->readset_.begin(); true; ++it_reads) {
-            lm_->Release(txn, *it_reads);
-            if (it_reads == it) {
-              break;
+          // If readset_.size() + writeset_.size() > 1, and blocked, just abort
+          if (txn->readset_.size() + txn->writeset_.size() > 1) {
+            // Release all locks that already acquired
+            for (set<Key>::iterator it_reads = txn->readset_.begin(); true; ++it_reads) {
+              lm_->Release(txn, *it_reads);
+              if (it_reads == it) {
+                break;
+              }
             }
+            break;
           }
-          break;
         }
       }
           
@@ -142,19 +145,21 @@ void TxnProcessor::RunLockingScheduler() {
              it != txn->writeset_.end(); ++it) {
           if (!lm_->WriteLock(txn, *it)) {
             blocked = true;
-            
-            // Release all read locks that already acquired
-            for (set<Key>::iterator it_reads = txn->readset_.begin(); it_reads != txn->readset_.end(); ++it_reads) {
-              lm_->Release(txn, *it_reads);
-            }
-            // Release all write locks that already acquired
-            for (set<Key>::iterator it_writes = txn->writeset_.begin(); true; ++it_writes) {
-              lm_->Release(txn, *it_writes);
-              if (it_writes == it) {
-                break;
+            // If readset_.size() + writeset_.size() > 1, and blocked, just abort
+            if (txn->readset_.size() + txn->writeset_.size() > 1) {
+              // Release all read locks that already acquired
+              for (set<Key>::iterator it_reads = txn->readset_.begin(); it_reads != txn->readset_.end(); ++it_reads) {
+                lm_->Release(txn, *it_reads);
               }
+              // Release all write locks that already acquired
+              for (set<Key>::iterator it_writes = txn->writeset_.begin(); true; ++it_writes) {
+                lm_->Release(txn, *it_writes);
+                if (it_writes == it) {
+                  break;
+                }
+              }
+              break;
             }
-            break;
           }
         }
       }
@@ -163,7 +168,7 @@ void TxnProcessor::RunLockingScheduler() {
       // ready to be executed. Else, just restart the txn
       if (blocked == false) {
         ready_txns_.push_back(txn);
-      } else {
+      } else if (blocked == true && (txn->writeset_.size() + txn->readset_.size() > 1)){
         mutex_.Lock();
         txn->unique_id_ = next_unique_id_;
         next_unique_id_++;

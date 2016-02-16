@@ -139,7 +139,6 @@ int main(int argc, char** argv) {
   cout << "\t\t0.1ms\t\t1ms\t\t10ms";
   cout << endl;
 
-  // Pin the main thread to CPU Core 7
   cpu_set_t cs;
   CPU_ZERO(&cs);
   CPU_SET(7, &cs);
@@ -210,6 +209,17 @@ int main(int argc, char** argv) {
   lg.push_back(new RMWLoadGen(1000000, 0, 10, 0.0001));
   lg.push_back(new RMWLoadGen(1000000, 0, 10, 0.001));
   lg.push_back(new RMWLoadGen(1000000, 0, 10, 0.01));
+
+  Benchmark(lg);
+
+  for (uint32 i = 0; i < lg.size(); i++)
+    delete lg[i];
+  lg.clear();
+  
+  cout << "High contention read-write (1 records)" << endl;
+  lg.push_back(new RMWLoadGen(5, 0, 1, 0.0001));
+  lg.push_back(new RMWLoadGen(5, 0, 1, 0.001));
+  lg.push_back(new RMWLoadGen(5, 0, 1, 0.01));
 
   Benchmark(lg);
 

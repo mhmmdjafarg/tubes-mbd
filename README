@@ -119,6 +119,13 @@ Pseudocode for the OCC algorithm to implement (in the RunOCCScheduler method):
     txn->reads_.empty();
     txn->writes_.empty();
     txn->status_ = INCOMPLETE;
+    
+  Restart txn:
+    mutex_.Lock();
+    txn->unique_id_ = next_unique_id_;
+    next_unique_id_++;
+    txn_requests_.Push(txn);
+    mutex_.Unlock(); 
        
        
 -------------------------------------------------------------------------------
@@ -170,7 +177,13 @@ Pseudocode to implement in RunOCCParallelScheduler:
        txn->reads_.empty();
        txn->writes_.empty();
        txn->status_ = INCOMPLETE;    
-        
+    
+    Restart txn:
+      mutex_.Lock();
+      txn->unique_id_ = next_unique_id_;
+      next_unique_id_++;
+      txn_requests_.Push(txn);
+      mutex_.Unlock();     
 
 --------------------------------------------------------------------------------
 Part 4: Multiversion Timestamp Ordering Concurrency Control.  25 points
@@ -205,6 +218,13 @@ Pseudocode for the algorithm to implement (in the RunMVCCScheduler method):
     txn->reads_.empty();
     txn->writes_.empty();
     txn->status_ = INCOMPLETE;
+    
+  Restart txn:
+    mutex_.Lock();
+    txn->unique_id_ = next_unique_id_;
+    next_unique_id_++;
+    txn_requests_.Push(txn);
+    mutex_.Unlock(); 
 
 
 ------------------------------------------------------------------------
