@@ -277,6 +277,8 @@ void TxnProcessor::RunOCCParallelScheduler() {
   // Implement this method! Note that implementing OCC with parallel
   // validation may need to create another method, like
   // TxnProcessor::ExecuteTxnParallel.
+  // Note that you can use active_set_ and active_set_mutex_ we provided
+  // for you in the txn_processor.h
   //
   // [For now, run serial scheduler in order to make it through the test
   // suite]
