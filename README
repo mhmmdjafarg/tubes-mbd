@@ -130,7 +130,7 @@ Pseudocode for the OCC algorithm to implement (in the RunOCCScheduler method):
     mutex_.Unlock(); 
 
 -------------------------------------------------------------------------------
-Part 3: Optimistic Concurrency Control with Parallel Validation.  13 points
+Part 3: Optimistic Concurrency Control with Parallel Validation.  12 points
 -------------------------------------------------------------------------------
 OCC with parallel validation means that the validation/write steps for OCC are done in parallel across transactions. There are several different ways to do the parallel validation -- here we give a simplified version of the pseudocode from the paper, or you can write your own pseudocode based on the paper's presentation of parallel validation and argue why it's better than the ones presented here (see analysis question 4). 
 
@@ -232,11 +232,11 @@ Pseudocode for the algorithm to implement (in the RunMVCCScheduler method):
     mutex_.Unlock(); 
 
 ------------------------------------------------------------------------
-Part 5: Analysis   4-7 points for each response, total 32 points
+Part 5: Analysis   3-8 points for each response, total 33 points
 ------------------------------------------------------------------------
 After implementing both locking schemes, both OCC schemes, and the MVCC scheme, please respond to the following questions in analysis.txt (text only, no formatting please).
 
-1) Carpe datum. (4 points)
+1) Carpe datum. (3 points)
 Run 'make test' and report the performance numbers given by txn_processor_test. Please run this on a zoo machine. In particular, find one that is not being used by anyone else (run 'top' or 'uptime' to see current memory usage/CPU load). This is extremely important for reproducibility of results.
 
 2) Simulations are doomed to succeed. (4 points)
@@ -250,10 +250,10 @@ The OCC with serial validation is simpler than OCC with parallel validation.  Ho
 
 If you did not follow the given pseudocode for OCC with parallel validation, give your pseudocode and argue why it is better.
 
-5) OCC vs. Locking B  (7 points)
+5) OCC vs. Locking B  (8 points)
 If your code is correct, you probably found that when the transaction duration was 0.1ms, OCC and Locking B were approximately the same performance for the 'high contention' read-only (5-records) test. But OCC beat Locking B for the 'high contention' read-only (10-records) test. What is the reason for OCC suddenly being better for 10-record transactions? Furthermore, OCC loses to Locking B for the 'high contention' read-write test (both for 5 record transactions and 10 record transactions). Why? Furthermore, why does the relative difference between OCC and Locking B get larger for transctions longer then 0.1 ms in the 'high contention' read-write test?
 
-6) MVCC vs. OCC/Locking (7 points)
+6) MVCC vs. OCC/Locking (8 points)
 For the read-write tests, MVCC performs worse than OCC and Locking. Why? It even sometimes does worse than serial. Why? Yet for the mixed read-only/read-write experiment it performs the best, even though it wasn't the best for either read-only nor read-write. Why?
 
 If you wrote your own version, please explain why it's better than the ones presented here.
