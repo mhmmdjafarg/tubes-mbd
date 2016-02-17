@@ -1,4 +1,5 @@
 // Author: Kun Ren (kun.ren@yale.edu)
+// Modified by Daniel Abadi
 
 #include "txn/mvcc_storage.h"
 
@@ -45,7 +46,7 @@ bool MVCCStorage::Read(Key key, Value* result, int txn_unique_id) {
   // Implement this method!
   
   // Hint: Iterate the version_lists and return the verion whose write timestamp
-  // (version_id) is the lagrgest write timestamp less than or equal to txn_unique_id.
+  // (version_id) is the largest write timestamp less than or equal to txn_unique_id.
   
   return true;
 }
@@ -57,10 +58,10 @@ bool MVCCStorage::CheckWrite(Key key, int txn_unique_id) {
   //
   // Implement this method!
   
-  // Hint: Before finally apply all writes, we should make sure that each write
+  // Hint: Before all writes are applied, we need to make sure that each write
   // can be safely applied based on MVCC timestamp ordering protocol. This method
   // only checks one key, so you should call this method for each key in the
-  // write_set. Return true if pass the check, return false if not. 
+  // write_set. Return true if this key passes the check, return false if not. 
   // Note that you don't have to call Lock(key) in this method, just
   // call Lock(key) before you call this method and call Unlock(key) afterward.
   
@@ -74,7 +75,7 @@ void MVCCStorage::Write(Key key, Value value, int txn_unique_id) {
   //
   // Implement this method!
   
-  // Hint: Insert a new version(malloc a Version and specify its value/version_id/max_read_id)
+  // Hint: Insert a new version (malloc a Version and specify its value/version_id/max_read_id)
   // into the version_lists. Note that InitStorage() also calls this method to init storage. 
   // Note that you don't have to call Lock(key) in this method, just
   // call Lock(key) before you call this method and call Unlock(key) afterward.
