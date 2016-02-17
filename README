@@ -56,7 +56,7 @@ Note: The framework relies heavily on the C++ standard template library (STL). I
 
 
 -----------------------------------------------------------
-Part 1A: Simple Locking (exclusive locks only)   10 points
+Part 1A: Simple Locking (exclusive locks only)   8 points
 -----------------------------------------------------------
 Once you've looked through the code and are somewhat familiar with the overall structure and flow, you'll implement a simplified version of two-phase locking. The protocol goes like this:
 1) Upon entering the system, each transaction requests an EXCLUSIVE lock on EVERY item that it will either read or write.
@@ -74,7 +74,7 @@ The test file 'txn/lock_manager_test.cc' provides some rudimentary correctness t
 
 
 -------------------------------------------------------------------------
-Part 1B: Slightly Less Simple Locking (adding in shared locks)  15 points
+Part 1B: Slightly Less Simple Locking (adding in shared locks)  10 points
 -------------------------------------------------------------------------
 To increase concurrency, we can allow transactions with overlapping readsets but disjoing writesets to execute concurrently. We do this by adding in SHARED locks. Again, all data structures already exist, and all you need to implement are the 'WriteLock', 'ReadLock', 'Release', and 'Status' methods in the class 'LockManagerB'.
 
@@ -82,7 +82,7 @@ Again, 'txn/lock_manager_test.cc' provides some basic correctness tests, but you
 
 
 ---------------------------------------------------------------------------
-Part 2: Serial Optimistic Concurrency Control (OCC)   15 points
+Part 2: Serial Optimistic Concurrency Control (OCC)   12 points
 ---------------------------------------------------------------------------
 For OCC, you will have to implement the 'TxnProcessor::RunOCCScheduler' method.
 This is a simplified version of OCC compared to the one presented in the paper.
@@ -91,12 +91,14 @@ Pseudocode for the OCC algorithm to implement (in the RunOCCScheduler method):
 
   while (true) {
     Get the next new transaction request (if one is pending) and pass it to an execution thread.
-    Deal with all transactions that have finished running.
+    Deal with all transactions that have finished running (see below).
   }
 
   In the execution thread (we are providing you this code):
     Record start time
-    Perform "read phase" of transaction (do all reads and writes to a local buffer)
+    Perform "read phase" of transaction:
+       Read all relevant data from storage
+       Execute the transaction logic (i.e. call Run() on the transaction)
 
   Dealing with a finished transaction (you must write this code):
     // Validation phase:
@@ -119,15 +121,14 @@ Pseudocode for the OCC algorithm to implement (in the RunOCCScheduler method):
     txn->reads_.empty();
     txn->writes_.empty();
     txn->status_ = INCOMPLETE;
-    
+       
   Restart txn:
     mutex_.Lock();
     txn->unique_id_ = next_unique_id_;
     next_unique_id_++;
     txn_requests_.Push(txn);
     mutex_.Unlock(); 
-       
-       
+
 -------------------------------------------------------------------------------
 Part 3: Optimistic Concurrency Control with Parallel Validation.  15 points
 -------------------------------------------------------------------------------
@@ -143,7 +144,9 @@ Pseudocode to implement in RunOCCParallelScheduler:
 
   In the execution thread:
     Record start time
-    Perform "read phase" of transaction (do all reads and do writes to a local buffer)
+    Perform "read phase" of transaction:
+       Read all relevant data from storage
+       Execute the transaction logic (i.e. call Run() on the transaction)
     <Start of critical section>
     Make a copy of the active set save it
     Add this transaction to the active set
@@ -177,16 +180,16 @@ Pseudocode to implement in RunOCCParallelScheduler:
        txn->reads_.empty();
        txn->writes_.empty();
        txn->status_ = INCOMPLETE;    
-    
+
     Restart txn:
       mutex_.Lock();
       txn->unique_id_ = next_unique_id_;
       next_unique_id_++;
       txn_requests_.Push(txn);
-      mutex_.Unlock();     
+      mutex_.Unlock();             
 
 --------------------------------------------------------------------------------
-Part 4: Multiversion Timestamp Ordering Concurrency Control.  25 points
+Part 4: Multiversion Timestamp Ordering Concurrency Control.  20 points
 --------------------------------------------------------------------------------
 For MVCC, you will have to implement the 'TxnProcessor::RunMVCCScheduler' method
  based on the pseudocode below. The pseudocode implements the MVCC timestamp ordering protocol from the paper that we read for class. 
@@ -203,13 +206,15 @@ Pseudocode for the algorithm to implement (in the RunMVCCScheduler method):
   }
 
   In the execution thread:
-    Start transaction running(Note that you should lock the key before read)
+    
+    Read all necessary data for this transaction from storage (Note that you should lock the key before each read)
+    Execute the transaction logic (i.e. call Run() on the transaction)
     Acquire all locks for keys in the write_set_
-    Call MVCCStorage::CheckWrite method to check all keys in the write_set_ to decide whether commit or abort the txn
-    If (pass the check)
+    Call MVCCStorage::CheckWrite method to check all keys in the write_set_
+    If (each key passed the check)
       Apply the writes
       Release all locks for keys in the write_set_
-    else if (fail the check)
+    else if (at least one key failed the check)
       Release all locks for keys in the write_set_
       Cleanup txn
       Completely restart the transaction.
@@ -218,7 +223,7 @@ Pseudocode for the algorithm to implement (in the RunMVCCScheduler method):
     txn->reads_.empty();
     txn->writes_.empty();
     txn->status_ = INCOMPLETE;
-    
+
   Restart txn:
     mutex_.Lock();
     txn->unique_id_ = next_unique_id_;
@@ -226,27 +231,33 @@ Pseudocode for the algorithm to implement (in the RunMVCCScheduler method):
     txn_requests_.Push(txn);
     mutex_.Unlock(); 
 
-
 ------------------------------------------------------------------------
-Part 5: Analysis   4 points for each response, total 20 points
+Part 5: Analysis   4-7 points for each response, total 35 points
 ------------------------------------------------------------------------
-After implementing both locking schemes and both OCC schemes, please respond to the following questions in analysis.txt (text only, no formatting please).
+After implementing both locking schemes, both OCC schemes, and the MVCC scheme, please respond to the following questions in analysis.txt (text only, no formatting please).
 
 1) Carpe datum.
 Run 'make test' and report the performance numbers given by txn_processor_test. Please run this on a zoo machine. In particular, find one that is not being used by anyone else (run 'top' or 'uptime' to see current memory usage/CPU load). This is extremely important for reproducibility of results.
 
 2) Simulations are doomed to succeed.
-Transaction durations are accomplished simply by forcing the thread executing each transaction to sleep for approximately the amount of time specified. Why is this a good approximation of transaction costs in real systems? What problems are there with the approximation?  Suggest a better approximation of transaction costs that could be used.
+Transaction durations are accomplished simply by forcing the thread executing each transaction to run in a busy loop for approximately the amount of time specified. This is supposed to simulate transaction logic --- e.g. the application might run some propietary customer scoring function to estimate the total value of the customer after reading in the customer record from the database. Please list at least two weaknesses of this simulation --- i.e. give two reasons why performance would be different if we ran actual application code instead of just simulating it with a busy loop.
 
 3) Locking manager
-Explain the performance difference between Locking A and Locking B. Neither of these locking schemes is very similar to standard two-phase locking. Compare and contrast Locking B with standard two-phase locking. How do you think two-phase locking would perform?
+Explain the performance difference between Locking A and Locking B: When does Locking A perform better than Locking B? Why? When does Locking B perform better than Locking A? Why? Neither of these locking schemes is equivilent to standard two-phase locking. Compare and contrast Locking B with standard two-phase locking. When would two-phase locking perform better than Locking B? When would Locking B perform better than two-phase locking?
 
 4) OCCam's Razor
-The OCC with serial validation is simpler than OCC with parallel validation.  Which performs better in this simulation?  Why do you think that is the case?  How does this compare to the expectations you had?  How do you think they would compare in a real system?  What would be an optimal workload for each of them?
+The OCC with serial validation is simpler than OCC with parallel validation.  How did the two algorithms compare with each other in this simulation? Why do you think that is the case?  How does this compare to the OCC paper that we read for class? What is the biggest reason for the difference between your results and the what you expected after reading the OCC paper?
+
 If you did not follow the given pseudocode for OCC with parallel validation, give your pseudocode and argue why it is better.
 
-5) MVCC
-Explain the performance difference between MVCC and other schemes for each workload. How does this compare to the expectations you had? If you wrote your own version, please explain why it's better than the ones presented here.
+5) OCC vs. Locking B
+If your code is correct, you probably found that when the transaction duration was 0.1ms, OCC and Locking B were approximately the same performance for the 'high contention' read-only (5-records) test. But OCC beat Locking B for the 'high contention' read-only (10-records) test. What is the reason for OCC suddenly being better for 10-record transactions? Furthermore, OCC loses to Locking B for the 'high contention' read-write test (both for 5 record transactions and 10 record transactions). Why? Furthermore, why does the relative difference between OCC and Locking B get larger for transctions longer then 0.1 ms in the 'high contention' read-write test?
+
+6) MVCC vs. OCC/Locking
+For the read-write tests, MVCC performs worse than OCC and Locking. Why? It even sometimes does worse than serial. Why? Yet for the mixed read-only/read-write experiment it performs the best, even though it wasn't the best for either read-only nor read-write. Why?
+
+If you wrote your own version, please explain why it's better than the ones presented here.
+
 
 ----------
 Submission
@@ -256,8 +267,11 @@ What To Turn In
   * analysis.txt --- Your responses to the analysis questions above
   * files_changed.txt----List of files you changed and what did you change
   * hw2.tar.gz-----Entire codebase that contains all your code
-  * MY.PARTNERS --- Listing the other person that you worked with (undergraduates only).
+  * partners.txt --- Listing the other person that you worked with (undergraduates only).
 
 How to Submit
 
   * Please submit the assignment via the assignments link on classes v2 according to the instructions there.
+
+
+Late policy: 5 points per 24 hours late.
