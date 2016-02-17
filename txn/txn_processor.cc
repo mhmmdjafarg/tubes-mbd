@@ -275,7 +275,7 @@ void TxnProcessor::RunOCCParallelScheduler() {
   // CPSC 438/538:
   //
   // Implement this method! Note that implementing OCC with parallel
-  // validation may need to create another function, like
+  // validation may need to create another method, like
   // TxnProcessor::ExecuteTxnParallel.
   //
   // [For now, run serial scheduler in order to make it through the test
@@ -289,7 +289,7 @@ void TxnProcessor::RunMVCCScheduler() {
   // Implement this method!
   
   // Hint:Pop a txn from txn_requests_, and pass it to a thread to execute. 
-  // Note that you may need to create execute method, like TxnProcessor::MVCCExecuteTxn. 
+  // Note that you may need to create another execute method, like TxnProcessor::MVCCExecuteTxn. 
   //
   // [For now, run serial scheduler in order to make it through the test
   // suite]

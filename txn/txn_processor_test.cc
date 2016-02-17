@@ -57,9 +57,9 @@ class RMWLoadGen2 : public LoadGen {
   }
 
   virtual Txn* NewTxn() {
-    // 20% of transactions are READ only transactions and run for the full
+    // 80% of transactions are READ only transactions and run for the full
     // transaction duration. The rest are very fast (< 0.1ms), high-contention
-    // (65%+) updates.
+    // updates.
     if (rand() % 100 < 80)
       return new RMW(dbsize_, rsetsize_, 0, wait_time_);
     else
@@ -85,7 +85,7 @@ void Benchmark(const vector<LoadGen*>& lg) {
     // Print out mode name.
     cout << ModeToString(mode) << flush;
 
-    // For each experiment...
+    // For each experiment, run 3 times and get the average.
     for (uint32 exp = 0; exp < lg.size(); exp++) {
       double throughput[3];
       for (uint32 round = 0; round < 3; round++) {
@@ -248,7 +248,10 @@ int main(int argc, char** argv) {
   for (uint32 i = 0; i < lg.size(); i++)
     delete lg[i];
   lg.clear();
-    
+  
+  // 80% of transactions are READ only transactions and run for the full
+  // transaction duration. The rest are very fast (< 0.1ms), high-contention
+  // updates.
   cout << "High contention mixed read only/read-write " << endl;
   lg.push_back(new RMWLoadGen2(50, 30, 10, 0.0001));
   lg.push_back(new RMWLoadGen2(50, 30, 10, 0.001));

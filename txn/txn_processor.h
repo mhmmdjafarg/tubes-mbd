@@ -136,10 +136,9 @@ class TxnProcessor {
   // Set of transactions that are currently in the process of parallel
   // validation.
   AtomicSet<Txn*> active_set_;
-  Mutex active_set_mutex_;  // Used it for parallel occ
-  
-  // For MVCC to find the oldest txn_id
-  AtomicSet<uint64> active_txn_id_set_;
+
+  // Used it for critical section in parallel occ.
+  Mutex active_set_mutex_;
 
   // Lock Manager used for LOCKING concurrency implementations.
   LockManager* lm_;

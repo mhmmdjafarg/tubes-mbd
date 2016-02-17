@@ -31,7 +31,7 @@ class Storage {
   virtual void Write(Key key, Value value, int txn_unique_id = 0);
 
   // Returns the timestamp at which the record with the specified key was last
-  // updated (returns 0 if the record has never been updated).
+  // updated (returns 0 if the record has never been updated). This is used for OCC.
   virtual double Timestamp(Key key);
   
   // Init storage
@@ -39,7 +39,7 @@ class Storage {
   
   virtual ~Storage() {}
   
-  // The following functions are only used for MVCC
+  // The following methods are only used for MVCC
   virtual void Lock(Key key) {}
   
   virtual void Unlock(Key key) {}
