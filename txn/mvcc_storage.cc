@@ -61,7 +61,8 @@ bool MVCCStorage::CheckWrite(Key key, int txn_unique_id) {
   // can be safely applied based on MVCC timestamp ordering protocol. This method
   // only checks one key, so you should call this method for each key in the
   // write_set. Return true if pass the check, return false if not. 
-  // Note that you should call Lock(key)/Unlock(key) before and after the Write;
+  // Note that you don't have to call Lock(key) in this method, just
+  // call Lock(key) before you call this method and call Unlock(key) afterward.
   
   
   return true;
@@ -75,7 +76,8 @@ void MVCCStorage::Write(Key key, Value value, int txn_unique_id) {
   
   // Hint: Insert a new version(malloc a Version and specify its value/version_id/max_read_id)
   // into the version_lists. Note that InitStorage() also calls this method to init storage. 
-  // Note that you should call Lock(key)/Unlock(key) before and after the Write;
+  // Note that you don't have to call Lock(key) in this method, just
+  // call Lock(key) before you call this method and call Unlock(key) afterward.
 }
 
 
