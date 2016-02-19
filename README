@@ -7,9 +7,9 @@ Time:     Monday   7:30-9:30 PM
 Location: AKW 203
  
  
-------------------------------
-Understanding Locking and OCC
-------------------------------
+------------------------------------
+Understanding Locking, OCC and MVCC
+------------------------------------
 Before beginning this assignment, please be sure you have a clear understanding of the goals and challenges of concurrency control mechanisms in database systems. The paper you read for class (http://zoo.cs.yale.edu/classes/cs637/franklin97concurrency.pdf) provides a good introduction to this material.
 
 In this assignment you will be implementing five concurrency control schemes:
@@ -89,7 +89,7 @@ This is a simplified version of OCC compared to the one presented in the paper.
 
 Pseudocode for the OCC algorithm to implement (in the RunOCCScheduler method):
 
-  while (true) {
+  while (tp_.Active()) {
     Get the next new transaction request (if one is pending) and pass it to an execution thread.
     Deal with all transactions that have finished running (see below).
   }
@@ -138,7 +138,7 @@ The util/atomic.h file contains data structures that may be useful for this sect
 
 Pseudocode to implement in RunOCCParallelScheduler:
 
-  while (true) {
+  while (tp_.Active()) {
     Get the next new transaction request (if one is pending) and pass it to an execution thread that executes the txn logic *and also* does the validation and write phases.
   }
 
@@ -201,7 +201,7 @@ In addition you will have to implement the MVCCStorage::Read, MVCCStorage::Write
 
 Pseudocode for the algorithm to implement (in the RunMVCCScheduler method):
 
-  while (true) {
+  while (tp_.Active()) {
     Get the next new transaction request (if one is pending) and pass it to an execution thread.
   }
 
