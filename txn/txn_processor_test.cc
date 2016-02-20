@@ -161,10 +161,10 @@ int main(int argc, char** argv) {
     delete lg[i];
   lg.clear();
   
-  cout << "'Low contention' Read only (10 records) " << endl;
-  lg.push_back(new RMWLoadGen(1000000, 10, 0, 0.0001));
-  lg.push_back(new RMWLoadGen(1000000, 10, 0, 0.001));
-  lg.push_back(new RMWLoadGen(1000000, 10, 0, 0.01));
+  cout << "'Low contention' Read only (20 records) " << endl;
+  lg.push_back(new RMWLoadGen(1000000, 20, 0, 0.0001));
+  lg.push_back(new RMWLoadGen(1000000, 20, 0, 0.001));
+  lg.push_back(new RMWLoadGen(1000000, 20, 0, 0.01));
 
   Benchmark(lg);
 
@@ -183,10 +183,10 @@ int main(int argc, char** argv) {
     delete lg[i];
   lg.clear();
 
-  cout << "'High contention' Read only (10 records)" << endl;
-  lg.push_back(new RMWLoadGen(100, 10, 0, 0.0001));
-  lg.push_back(new RMWLoadGen(100, 10, 0, 0.001));
-  lg.push_back(new RMWLoadGen(100, 10, 0, 0.01));
+  cout << "'High contention' Read only (20 records)" << endl;
+  lg.push_back(new RMWLoadGen(100, 20, 0, 0.0001));
+  lg.push_back(new RMWLoadGen(100, 20, 0, 0.001));
+  lg.push_back(new RMWLoadGen(100, 20, 0, 0.01));
 
   Benchmark(lg);
 
