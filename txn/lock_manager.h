@@ -134,6 +134,11 @@ class LockManagerB : public LockManager {
   virtual bool WriteLock(Txn* txn, const Key& key);
   virtual void Release(Txn* txn, const Key& key);
   virtual LockMode Status(const Key& key, vector<Txn*>* owners);
+ private:
+  /**
+   * Returns `false` if no exclusive lock is in the lock queue for `key`.
+   */
+  bool _noExclusiveWaiting(const Key& key) const;
 };
 
 #endif  // _LOCK_MANAGER_H_

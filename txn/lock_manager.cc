@@ -82,29 +82,107 @@ LockManagerB::LockManagerB(deque<Txn*>* ready_txns) {
 }
 
 bool LockManagerB::WriteLock(Txn* txn, const Key& key) {
-  // CPSC 438/538:
-  //
-  // Implement this method!
-  return true;
+  LockRequest rq(EXCLUSIVE, txn);
+  LockMode status = Status(key, nullptr);
+
+  deque<LockRequest> *dq = lock_table_[key];
+  if (dq == nullptr) {
+    dq = new deque<LockRequest>();
+    lock_table_[key] = dq;
+  }
+
+  dq->push_back(rq);
+
+  bool granted = status == UNLOCKED;
+  if (!granted)
+    txn_waits_[txn]++;
+
+  return granted;
 }
 
 bool LockManagerB::ReadLock(Txn* txn, const Key& key) {
-  // CPSC 438/538:
-  //
-  // Implement this method!
-  return true;
+  LockRequest rq(SHARED, txn);
+  LockMode status = Status(key, nullptr);
+
+  deque<LockRequest> *dq = lock_table_[key];
+  if (dq == nullptr) {
+    dq = new deque<LockRequest>();
+    lock_table_[key] = dq;
+  }
+
+  dq->push_back(rq);
+
+  bool granted = status == UNLOCKED || _noExclusiveWaiting(key);
+  if (!granted)
+    txn_waits_[txn]++;
+
+  return granted;
 }
 
 void LockManagerB::Release(Txn* txn, const Key& key) {
-  // CPSC 438/538:
-  //
-  // Implement this method!
+  deque<LockRequest> *queue = lock_table_[key];
+
+  for (auto it = queue->begin(); it < queue->end(); it++) {
+    if (it->txn_ == txn) {
+      queue->erase(it);
+      break;
+    }
+  }
+
+  // Advance the lock, by making new owners ready.
+  // Some in newOwners already own the lock.  These are not in
+  // txn_waits_.
+  vector<Txn*> newOwners;
+  Status(key, &newOwners);
+
+  for (auto&& owner : newOwners) {
+    auto waitCount = txn_waits_.find(owner);
+    if (waitCount != txn_waits_.end() && --(waitCount->second) == 0) {
+      ready_txns_->push_back(owner);
+      txn_waits_.erase(waitCount);
+    }
+  }
 }
 
 LockMode LockManagerB::Status(const Key& key, vector<Txn*>* owners) {
-  // CPSC 438/538:
-  //
-  // Implement this method!
-  return UNLOCKED;
+  deque<LockRequest> *dq = lock_table_[key];
+  if (dq == nullptr || dq->empty()) {
+    return UNLOCKED;
+  }
+
+  LockMode mode = EXCLUSIVE;
+  vector<Txn*> txn_owners;
+  for (auto&& lockRequest : *dq) {
+    if (lockRequest.mode_ == EXCLUSIVE && mode == SHARED)
+        break;
+
+    txn_owners.push_back(lockRequest.txn_);
+    mode = lockRequest.mode_;
+
+    if (mode == EXCLUSIVE)
+      break;
+  }
+
+  if (owners)
+    *owners = txn_owners;
+
+  return mode;
 }
 
+bool LockManagerB::_noExclusiveWaiting(const Key& key) const {
+  auto it = lock_table_.find(key);
+
+  if (it == lock_table_.end()) // Key doesn't exist.
+    return true;
+
+  deque<LockRequest> *dq = it->second;
+  if (!dq) // No deque, but key exists.
+    return true;
+
+  for (auto&& lr : *dq) {
+    if (lr.mode_ == EXCLUSIVE)
+      return false;
+  }
+
+  return true;
+}
