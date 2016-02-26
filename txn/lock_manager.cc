@@ -19,7 +19,7 @@ bool LockManagerA::WriteLock(Txn* txn, const Key& key) {
   LockRequest rq(EXCLUSIVE, txn);
   deque<LockRequest> *dq = lock_table_[key];
 
-  if (dq == NULL) {
+  if (!dq) {
     dq = new deque<LockRequest>();
     lock_table_[key] = dq;
   } else {
@@ -67,7 +67,7 @@ void LockManagerA::Release(Txn* txn, const Key& key) {
 
 LockMode LockManagerA::Status(const Key& key, vector<Txn*>* owners) {
   deque<LockRequest> *dq = lock_table_[key];
-  if (dq == NULL || dq->empty()) {
+  if (!dq || dq->empty()) {
     return UNLOCKED;
   } else {
     vector<Txn*> _owners;
@@ -86,7 +86,7 @@ bool LockManagerB::WriteLock(Txn* txn, const Key& key) {
   LockMode status = Status(key, nullptr);
 
   deque<LockRequest> *dq = lock_table_[key];
-  if (dq == nullptr) {
+  if (!dq) {
     dq = new deque<LockRequest>();
     lock_table_[key] = dq;
   }
@@ -105,7 +105,7 @@ bool LockManagerB::ReadLock(Txn* txn, const Key& key) {
   LockMode status = Status(key, nullptr);
 
   deque<LockRequest> *dq = lock_table_[key];
-  if (dq == nullptr) {
+  if (!dq) {
     dq = new deque<LockRequest>();
     lock_table_[key] = dq;
   }
@@ -146,7 +146,7 @@ void LockManagerB::Release(Txn* txn, const Key& key) {
 
 LockMode LockManagerB::Status(const Key& key, vector<Txn*>* owners) {
   deque<LockRequest> *dq = lock_table_[key];
-  if (dq == nullptr || dq->empty()) {
+  if (!dq || dq->empty()) {
     return UNLOCKED;
   }
 
