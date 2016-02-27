@@ -143,6 +143,13 @@ class LockManagerB : public LockManager {
   /**
    * Returns `false` if no exclusive lock is in the lock queue for `key`.
    */
+
+  /**
+   * Maintains counts of the number of exclusive locks in lock_table_
+   * for each key.
+   */
+  unordered_map<Key, uint64_t> _numExclusiveWaiting;
+
   bool _addLock(LockMode mode, Txn* txn, const Key& key);
   bool _noExclusiveWaiting(const Key& key);
 };

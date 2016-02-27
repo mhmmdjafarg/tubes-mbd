@@ -91,8 +91,11 @@ bool LockManagerB::_addLock(LockMode mode, Txn* txn, const Key& key) {
   dq->push_back(rq);
 
   bool granted = status == UNLOCKED;
-  if (mode == SHARED)
+  if (mode == SHARED) {
     granted |= _noExclusiveWaiting(key);
+  } else {
+    _numExclusiveWaiting[key]++;
+  }
 
   if (!granted)
     txn_waits_[txn]++;
@@ -115,6 +118,10 @@ void LockManagerB::Release(Txn* txn, const Key& key) {
   for (auto it = queue->begin(); it < queue->end(); it++) {
     if (it->txn_ == txn) {
       queue->erase(it);
+      if (it->mode_ == EXCLUSIVE) {
+        _numExclusiveWaiting[key]--;
+      }
+
       break;
     }
   }
@@ -159,12 +166,6 @@ LockMode LockManagerB::Status(const Key& key, vector<Txn*>* owners) {
   return mode;
 }
 
-bool LockManagerB::_noExclusiveWaiting(const Key& key) {
-  deque<LockRequest> *dq = _getLockQueue(key);
-  for (auto&& lr : *dq) {
-    if (lr.mode_ == EXCLUSIVE)
-      return false;
-  }
-
-  return true;
+inline bool LockManagerB::_noExclusiveWaiting(const Key& key) {
+  return _numExclusiveWaiting[key] == 0;
 }
