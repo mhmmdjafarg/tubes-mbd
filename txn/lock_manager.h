@@ -110,6 +110,11 @@ class LockManager {
   // 'txn_waits_' are invalided by any call to Release() with the entry's
   // txn.
   unordered_map<Txn*, int> txn_waits_;
+
+  /**
+   * Get the lock queue for key, creating it if it doesn't exist.
+   */
+  deque<LockRequest>* _getLockQueue(const Key& key);
 };
 
 // Version of the LockManager implementing ONLY exclusive locks.
@@ -138,7 +143,7 @@ class LockManagerB : public LockManager {
   /**
    * Returns `false` if no exclusive lock is in the lock queue for `key`.
    */
-  bool _noExclusiveWaiting(const Key& key) const;
+  bool _noExclusiveWaiting(const Key& key);
 };
 
 #endif  // _LOCK_MANAGER_H_

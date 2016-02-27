@@ -10,6 +10,15 @@
 
 using std::deque;
 
+deque<LockManager::LockRequest>* LockManager::_getLockQueue(const Key& key) {
+  deque<LockRequest> *dq = lock_table_[key];
+  if (!dq) {
+    dq = new deque<LockRequest>();
+    lock_table_[key] = dq;
+  }
+  return dq;
+}
+
 LockManagerA::LockManagerA(deque<Txn*>* ready_txns) {
   ready_txns_ = ready_txns;
 }
@@ -17,15 +26,9 @@ LockManagerA::LockManagerA(deque<Txn*>* ready_txns) {
 bool LockManagerA::WriteLock(Txn* txn, const Key& key) {
   bool empty = true;
   LockRequest rq(EXCLUSIVE, txn);
-  deque<LockRequest> *dq = lock_table_[key];
+  deque<LockRequest> *dq = _getLockQueue(key);
 
-  if (!dq) {
-    dq = new deque<LockRequest>();
-    lock_table_[key] = dq;
-  } else {
-    empty = dq->empty();
-  }
-
+  empty = dq->empty();
   dq->push_back(rq);
 
   if (!empty) { // Add to wait list, doesn't own lock.
@@ -41,7 +44,7 @@ bool LockManagerA::ReadLock(Txn* txn, const Key& key) {
 }
 
 void LockManagerA::Release(Txn* txn, const Key& key) {
-  deque<LockRequest> *queue = lock_table_[key];
+  deque<LockRequest> *queue = _getLockQueue(key);
   bool removedOwner = true; // Is the lock removed the lock owner?
 
   // Delete the txn's exclusive lock.
@@ -66,8 +69,8 @@ void LockManagerA::Release(Txn* txn, const Key& key) {
 }
 
 LockMode LockManagerA::Status(const Key& key, vector<Txn*>* owners) {
-  deque<LockRequest> *dq = lock_table_[key];
-  if (!dq || dq->empty()) {
+  deque<LockRequest> *dq = _getLockQueue(key);
+  if (dq->empty()) {
     return UNLOCKED;
   } else {
     vector<Txn*> _owners;
@@ -85,12 +88,7 @@ bool LockManagerB::WriteLock(Txn* txn, const Key& key) {
   LockRequest rq(EXCLUSIVE, txn);
   LockMode status = Status(key, nullptr);
 
-  deque<LockRequest> *dq = lock_table_[key];
-  if (!dq) {
-    dq = new deque<LockRequest>();
-    lock_table_[key] = dq;
-  }
-
+  deque<LockRequest> *dq = _getLockQueue(key);
   dq->push_back(rq);
 
   bool granted = status == UNLOCKED;
@@ -104,12 +102,7 @@ bool LockManagerB::ReadLock(Txn* txn, const Key& key) {
   LockRequest rq(SHARED, txn);
   LockMode status = Status(key, nullptr);
 
-  deque<LockRequest> *dq = lock_table_[key];
-  if (!dq) {
-    dq = new deque<LockRequest>();
-    lock_table_[key] = dq;
-  }
-
+  deque<LockRequest> *dq = _getLockQueue(key);
   dq->push_back(rq);
 
   bool granted = status == UNLOCKED || _noExclusiveWaiting(key);
@@ -120,7 +113,7 @@ bool LockManagerB::ReadLock(Txn* txn, const Key& key) {
 }
 
 void LockManagerB::Release(Txn* txn, const Key& key) {
-  deque<LockRequest> *queue = lock_table_[key];
+  deque<LockRequest> *queue = _getLockQueue(key);
 
   for (auto it = queue->begin(); it < queue->end(); it++) {
     if (it->txn_ == txn) {
@@ -145,8 +138,8 @@ void LockManagerB::Release(Txn* txn, const Key& key) {
 }
 
 LockMode LockManagerB::Status(const Key& key, vector<Txn*>* owners) {
-  deque<LockRequest> *dq = lock_table_[key];
-  if (!dq || dq->empty()) {
+  deque<LockRequest> *dq = _getLockQueue(key);
+  if (dq->empty()) {
     return UNLOCKED;
   }
 
@@ -169,16 +162,8 @@ LockMode LockManagerB::Status(const Key& key, vector<Txn*>* owners) {
   return mode;
 }
 
-bool LockManagerB::_noExclusiveWaiting(const Key& key) const {
-  auto it = lock_table_.find(key);
-
-  if (it == lock_table_.end()) // Key doesn't exist.
-    return true;
-
-  deque<LockRequest> *dq = it->second;
-  if (!dq) // No deque, but key exists.
-    return true;
-
+bool LockManagerB::_noExclusiveWaiting(const Key& key) {
+  deque<LockRequest> *dq = _getLockQueue(key);
   for (auto&& lr : *dq) {
     if (lr.mode_ == EXCLUSIVE)
       return false;
