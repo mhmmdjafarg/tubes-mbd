@@ -58,9 +58,9 @@ class TxnProcessor {
 
   // Main loop implementing all concurrency control/thread scheduling.
   void RunScheduler();
-  
+
   static void* StartScheduler(void * arg);
-  
+
  private:
 
   // Serial validation
@@ -80,7 +80,7 @@ class TxnProcessor {
 
   // OCC version of scheduler with parallel validation.
   void RunOCCParallelScheduler();
-  
+
   // MVCC version of scheduler.
   void RunMVCCScheduler();
 
@@ -92,18 +92,18 @@ class TxnProcessor {
   //
   // Requires: txn->Status() is COMPLETED_C.
   void ApplyWrites(Txn* txn);
-  
+
   // The following functions are for MVCC
   void MVCCExecuteTxn(Txn* txn);
-    
+
   bool MVCCCheckWrites(Txn* txn);
 
   void MVCCLockWriteKeys(Txn* txn);
 
   void MVCCUnlockWriteKeys(Txn* txn);
-  
+
   void GarbageCollection();
-  
+
   // Concurrency control mechanism the TxnProcessor is currently using.
   CCMode mode_;
 
@@ -132,7 +132,7 @@ class TxnProcessor {
   // Queue of transaction results (already committed or aborted) to be returned
   // to client.
   AtomicQueue<Txn*> txn_results_;
-  
+
   // Set of transactions that are currently in the process of parallel
   // validation.
   AtomicSet<Txn*> active_set_;
