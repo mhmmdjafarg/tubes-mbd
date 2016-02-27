@@ -83,32 +83,30 @@ LockManagerB::LockManagerB(deque<Txn*>* ready_txns) {
   ready_txns_ = ready_txns;
 }
 
-bool LockManagerB::WriteLock(Txn* txn, const Key& key) {
-  LockRequest rq(EXCLUSIVE, txn);
+bool LockManagerB::_addLock(LockMode mode, Txn* txn, const Key& key) {
+  LockRequest rq(mode, txn);
   LockMode status = Status(key, nullptr);
 
   deque<LockRequest> *dq = _getLockQueue(key);
   dq->push_back(rq);
 
   bool granted = status == UNLOCKED;
+  if (mode == SHARED)
+    granted |= _noExclusiveWaiting(key);
+
   if (!granted)
     txn_waits_[txn]++;
 
   return granted;
 }
 
+
+bool LockManagerB::WriteLock(Txn* txn, const Key& key) {
+  return _addLock(EXCLUSIVE, txn, key);
+}
+
 bool LockManagerB::ReadLock(Txn* txn, const Key& key) {
-  LockRequest rq(SHARED, txn);
-  LockMode status = Status(key, nullptr);
-
-  deque<LockRequest> *dq = _getLockQueue(key);
-  dq->push_back(rq);
-
-  bool granted = status == UNLOCKED || _noExclusiveWaiting(key);
-  if (!granted)
-    txn_waits_[txn]++;
-
-  return granted;
+  return _addLock(SHARED, txn, key);
 }
 
 void LockManagerB::Release(Txn* txn, const Key& key) {
