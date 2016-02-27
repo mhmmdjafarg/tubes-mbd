@@ -30,7 +30,7 @@ enum LockMode {
 
 class LockManager {
  public:
-  virtual ~LockManager() {}
+  virtual ~LockManager();
 
   // Attempts to grant a read lock to the specified transaction, enqueueing
   // request in lock table. Returns true if lock is immediately granted, else

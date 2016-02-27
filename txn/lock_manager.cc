@@ -10,6 +10,13 @@
 
 using std::deque;
 
+LockManager::~LockManager() {
+  // Cleanup lock_table_
+  for (auto it = lock_table_.begin(); it != lock_table_.end(); it++) {
+    delete it->second;
+  }
+}
+
 deque<LockManager::LockRequest>* LockManager::_getLockQueue(const Key& key) {
   deque<LockRequest> *dq = lock_table_[key];
   if (!dq) {
