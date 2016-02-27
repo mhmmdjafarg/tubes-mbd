@@ -75,6 +75,9 @@ class TxnProcessor {
   // Locking version of scheduler.
   void RunLockingScheduler();
 
+  // Determine whether a txn is valid in the occ scheduler.
+  bool OCCValidateTransaction(const Txn &txn) const;
+
   // OCC version of scheduler.
   void RunOCCScheduler();
 
