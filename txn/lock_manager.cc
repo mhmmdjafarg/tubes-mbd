@@ -60,8 +60,7 @@ void LockManagerA::Release(Txn* txn, const Key& key) {
     // Give the next transaction the lock
     LockRequest next = queue->front();
 
-    int wait_count = --txn_waits_[next.txn_];
-    if (wait_count == 0) {
+    if (--txn_waits_[next.txn_] == 0) {
         ready_txns_->push_back(next.txn_);
         txn_waits_.erase(next.txn_);
     }
