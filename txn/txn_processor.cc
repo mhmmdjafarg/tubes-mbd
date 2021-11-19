@@ -34,12 +34,12 @@ TxnProcessor::TxnProcessor(CCMode mode)
   pthread_attr_init(&attr);
   CPU_ZERO(&cpuset);
   CPU_SET(0, &cpuset);
-  CPU_SET(1, &cpuset);
+  CPU_SET(1, &cpuset);       
   CPU_SET(2, &cpuset);
   CPU_SET(3, &cpuset);
   CPU_SET(4, &cpuset);
   CPU_SET(5, &cpuset);
-  CPU_SET(6, &cpuset);
+  CPU_SET(6, &cpuset);  
   pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpuset);
   pthread_t scheduler_;
   pthread_create(&scheduler_, &attr, StartScheduler, reinterpret_cast<void*>(this));
@@ -173,7 +173,7 @@ void TxnProcessor::RunLockingScheduler() {
         txn->unique_id_ = next_unique_id_;
         next_unique_id_++;
         txn_requests_.Push(txn);
-        mutex_.Unlock();
+        mutex_.Unlock(); 
       }
     }
 
@@ -260,65 +260,15 @@ void TxnProcessor::ApplyWrites(Txn* txn) {
   }
 }
 
-/**
- * Precondition: No storage writes are occuring during execution.
- */
-bool TxnProcessor::OCCValidateTransaction(const Txn &txn) const {
-  // Check
-  for (auto&& key : txn.readset_) {
-    if (txn.occ_start_time_ < storage_->Timestamp(key))
-      return false;
-  }
-
-  for (auto&& key : txn.writeset_) {
-    if (txn.occ_start_time_ < storage_->Timestamp(key))
-      return false;
-  }
-
-  return true;
-}
-
 void TxnProcessor::RunOCCScheduler() {
-  // Fetch transaction requests, and immediately begin executing them.
-  while (tp_.Active()) {
-    Txn *txn;
-    if (txn_requests_.Pop(&txn)) {
+  // CPSC 438/538:
+  //
+  // Implement this method!
+  //
+  // [For now, run serial scheduler in order to make it through the test
+  // suite]
 
-      // Start txn running in its own thread.
-      tp_.RunTask(new Method<TxnProcessor, void, Txn*>(
-                  this,
-                  &TxnProcessor::ExecuteTxn,
-                  txn));
-    }
-
-    // Validate completed transactions, serially
-    Txn *finished;
-    while (completed_txns_.Pop(&finished)) {
-      if (finished->Status() == COMPLETED_A) {
-        finished->status_ = ABORTED;
-      } else {
-        bool valid = OCCValidateTransaction(*finished);
-        if (!valid) {
-          // Cleanup and restart
-          finished->reads_.empty();
-          finished->writes_.empty();
-          finished->status_ = INCOMPLETE;
-
-          mutex_.Lock();
-          txn->unique_id_ = next_unique_id_;
-          next_unique_id_++;
-          txn_requests_.Push(finished);
-          mutex_.Unlock();
-        } else {
-          // Commit the transaction
-          ApplyWrites(finished);
-          txn->status_ = COMMITTED;
-        }
-      }
-
-      txn_results_.Push(finished);
-    }
-  }
+  RunSerialScheduler();
 }
 
 void TxnProcessor::RunOCCParallelScheduler() {
@@ -340,11 +290,10 @@ void TxnProcessor::RunMVCCScheduler() {
   //
   // Implement this method!
 
-  // Hint:Pop a txn from txn_requests_, and pass it to a thread to execute.
-  // Note that you may need to create another execute method, like TxnProcessor::MVCCExecuteTxn.
+  // Hint:Pop a txn from txn_requests_, and pass it to a thread to execute. 
+  // Note that you may need to create another execute method, like TxnProcessor::MVCCExecuteTxn. 
   //
   // [For now, run serial scheduler in order to make it through the test
   // suite]
   RunSerialScheduler();
 }
-

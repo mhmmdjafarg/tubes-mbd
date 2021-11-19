@@ -18,14 +18,14 @@ MVCCStorage::~MVCCStorage() {
        it != mvcc_data_.end(); ++it) {
     delete it->second;          
   }
-  
+
   mvcc_data_.clear();
-  
+
   for (unordered_map<Key, Mutex*>::iterator it = mutexs_.begin();
        it != mutexs_.end(); ++it) {
     delete it->second;          
   }
-  
+
   mutexs_.clear();
 }
 
@@ -44,10 +44,10 @@ bool MVCCStorage::Read(Key key, Value* result, int txn_unique_id) {
   // CPSC 438/538:
   //
   // Implement this method!
-  
+
   // Hint: Iterate the version_lists and return the verion whose write timestamp
   // (version_id) is the largest write timestamp less than or equal to txn_unique_id.
-  
+
   return true;
 }
 
@@ -57,15 +57,15 @@ bool MVCCStorage::CheckWrite(Key key, int txn_unique_id) {
   // CPSC 438/538:
   //
   // Implement this method!
-  
+
   // Hint: Before all writes are applied, we need to make sure that each write
   // can be safely applied based on MVCC timestamp ordering protocol. This method
   // only checks one key, so you should call this method for each key in the
   // write_set. Return true if this key passes the check, return false if not. 
   // Note that you don't have to call Lock(key) in this method, just
   // call Lock(key) before you call this method and call Unlock(key) afterward.
-  
-  
+
+
   return true;
 }
 
@@ -74,11 +74,9 @@ void MVCCStorage::Write(Key key, Value value, int txn_unique_id) {
   // CPSC 438/538:
   //
   // Implement this method!
-  
+
   // Hint: Insert a new version (malloc a Version and specify its value/version_id/max_read_id)
   // into the version_lists. Note that InitStorage() also calls this method to init storage. 
   // Note that you don't have to call Lock(key) in this method, just
   // call Lock(key) before you call this method and call Unlock(key) afterward.
 }
-
-
