@@ -103,7 +103,7 @@ TEST(LockManagerA_LocksReleasedOutOfOrder)
   EXPECT_EQ(t4, ready_txns.at(2));
 
   lm.Release(t4, 101);
-  EXPECT_EQ(0, owners.size());
+  EXPECT_EQ(UNLOCKED, lm.Status(101, &owners));
 
   END;
 }
