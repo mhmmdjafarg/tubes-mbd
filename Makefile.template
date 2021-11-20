@@ -33,7 +33,7 @@ ifeq ($(LOWERC_DIR),proto)
 else
   SRC_CC_FILES := $(LOWERC_DIR)/%.cc
 endif
-  
+
 $(OBJDIR)/$(LOWERC_DIR)/%.o: $(SRC_CC_FILES) $(SRC_LINKED_OBJECTS)
 	@echo + cxx $<
 	@mkdir -p $(@D)

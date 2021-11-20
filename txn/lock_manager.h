@@ -30,7 +30,7 @@ enum LockMode {
 
 class LockManager {
  public:
-  virtual ~LockManager();
+  virtual ~LockManager() {}
 
   // Attempts to grant a read lock to the specified transaction, enqueueing
   // request in lock table. Returns true if lock is immediately granted, else
@@ -110,11 +110,6 @@ class LockManager {
   // 'txn_waits_' are invalided by any call to Release() with the entry's
   // txn.
   unordered_map<Txn*, int> txn_waits_;
-
-  /**
-   * Get the lock queue for key, creating it if it doesn't exist.
-   */
-  deque<LockRequest>* _getLockQueue(const Key& key);
 };
 
 // Version of the LockManager implementing ONLY exclusive locks.
