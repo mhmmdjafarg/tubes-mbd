@@ -21,6 +21,7 @@ TEST(LockManagerA_SimpleLocking)
   Txn *t3 = reinterpret_cast<Txn *>(3);
 
   // Txn 1 acquires read lock.
+  std::cout << "Transaksi 1\n";
   lm.ReadLock(t1, 101);
   ready_txns.push_back(t1); // Txn 1 is ready.
   EXPECT_EQ(EXCLUSIVE, lm.Status(101, &owners));
@@ -30,6 +31,7 @@ TEST(LockManagerA_SimpleLocking)
   EXPECT_EQ(t1, ready_txns.at(0));
 
   // Txn 2 requests write lock. Not granted.
+  std::cout << "Transaksi 2\n";
   lm.WriteLock(t2, 101);
   EXPECT_EQ(EXCLUSIVE, lm.Status(101, &owners));
   EXPECT_EQ(1, owners.size());
@@ -37,6 +39,7 @@ TEST(LockManagerA_SimpleLocking)
   EXPECT_EQ(1, ready_txns.size());
 
   // Txn 3 requests read lock. Not granted.
+  std::cout << "Transaksi 3\n";
   lm.ReadLock(t3, 101);
   EXPECT_EQ(EXCLUSIVE, lm.Status(101, &owners));
   EXPECT_EQ(1, owners.size());
@@ -44,6 +47,7 @@ TEST(LockManagerA_SimpleLocking)
   EXPECT_EQ(1, ready_txns.size());
 
   // Txn 1 releases lock.  Txn 2 is granted write lock.
+  std::cout << "Transaksi 1\n";
   lm.Release(t1, 101);
   EXPECT_EQ(EXCLUSIVE, lm.Status(101, &owners));
   EXPECT_EQ(1, owners.size());
@@ -52,6 +56,7 @@ TEST(LockManagerA_SimpleLocking)
   EXPECT_EQ(t2, ready_txns.at(1));
 
   // Txn 2 releases lock.  Txn 3 is granted read lock.
+  std::cout << "Transaksi 2\n";
   lm.Release(t2, 101);
   EXPECT_EQ(EXCLUSIVE, lm.Status(101, &owners));
   EXPECT_EQ(1, owners.size());
@@ -73,12 +78,16 @@ TEST(LockManagerA_LocksReleasedOutOfOrder)
   Txn *t3 = reinterpret_cast<Txn *>(3);
   Txn *t4 = reinterpret_cast<Txn *>(4);
 
+  std::cout << "Transaksi 1\n";
   lm.ReadLock(t1, 101);     // Txn 1 acquires read lock.
   ready_txns.push_back(t1); // Txn 1 is ready.
+  std::cout << "Transaksi 2\n";
   lm.WriteLock(t2, 101);    // Txn 2 requests write lock. Not granted.
+  std::cout << "Transaksi 3\n";
   lm.ReadLock(t3, 101);     // Txn 3 requests read lock. Not granted.
+  std::cout << "Transaksi 4\n";
   lm.ReadLock(t4, 101);     // Txn 4 requests read lock. Not granted.
-
+  std::cout << "Transaksi 2\n";
   lm.Release(t2, 101); // Txn 2 cancels write lock request.
 
   // Txn 1 should now have a read lock and Txns 3 and 4 should be next in line.
@@ -87,6 +96,7 @@ TEST(LockManagerA_LocksReleasedOutOfOrder)
   EXPECT_EQ(t1, owners[0]);
 
   // Txn 1 releases lock.  Txn 3 is granted read lock.
+  std::cout << "Transaksi 1\n";
   lm.Release(t1, 101);
   EXPECT_EQ(EXCLUSIVE, lm.Status(101, &owners));
   EXPECT_EQ(1, owners.size());
@@ -95,6 +105,7 @@ TEST(LockManagerA_LocksReleasedOutOfOrder)
   EXPECT_EQ(t3, ready_txns.at(1));
 
   // Txn 3 releases lock.  Txn 4 is granted read lock.
+  std::cout << "Transaksi 3\n";
   lm.Release(t3, 101);
   EXPECT_EQ(EXCLUSIVE, lm.Status(101, &owners));
   EXPECT_EQ(1, owners.size());
@@ -102,6 +113,7 @@ TEST(LockManagerA_LocksReleasedOutOfOrder)
   EXPECT_EQ(3, ready_txns.size());
   EXPECT_EQ(t4, ready_txns.at(2));
 
+  std::cout << "Transaksi 4\n";
   lm.Release(t4, 101);
   EXPECT_EQ(UNLOCKED, lm.Status(101, &owners));
 

@@ -24,6 +24,7 @@ bool LockManagerA::WriteLock(Txn *txn, const Key &key)
     deque<LockRequest> *newLr = new deque<LockRequest>();
     newLr->push_back(rq);
     this->lock_table_[key] = newLr;
+    std::cout << "Grant exlusive lock " << key << "\n";
     return true;
   }
   else
@@ -32,8 +33,11 @@ bool LockManagerA::WriteLock(Txn *txn, const Key &key)
     this->lock_table_[key]->push_back(rq);
 
     // Deque LockRequest masih kosong maka grant lock
-    if (this->lock_table_[key]->size() == 1)
+    if (this->lock_table_[key]->size() == 1){
+      std::cout << "Grant exlusive lock " << key << "\n";
       return true;
+    }
+
 
     // Cek apakah txn ini sudah ada pada txn_waits, jika belum ada inisiasi = 1, jika belum tambahkan
     if (this->txn_waits_.find(txn) == this->txn_waits_.end())
@@ -45,6 +49,7 @@ bool LockManagerA::WriteLock(Txn *txn, const Key &key)
       this->txn_waits_[txn]++;
     }
     // Reject lock, txn waits
+    std::cout << "Reject exlusive lock " << key << "\n";
     return false;
   }
 }
@@ -63,12 +68,14 @@ void LockManagerA::Release(Txn *txn, const Key &key)
   // Implement this method!
 
   // Cek apakah owner akan di release
+  std::cout << "Release lock for key " << key << "\n";
   if (this->lock_table_[key]->front().txn_ == txn)
   {
     this->lock_table_[key]->pop_front();
     // Jika ada transaksi lain dibelakangnya maka grant lock pada txn tersebut
     if (this->lock_table_[key]->size() != 0)
     {
+      std::cout << "Granting exclusive lock to next waiting transaction for key " << key << "\n";
       this->ready_txns_->push_back(this->lock_table_[key]->front().txn_);
     }
     return;
@@ -100,10 +107,12 @@ LockMode LockManagerA::Status(const Key &key, vector<Txn *> *owners)
 
   if (owners->empty())
   {
+    std::cout << "Status for key " << key << " is UNLOCKED\n";
     return UNLOCKED;
   }
   else
   {
+    std::cout << "Status for key " << key << " is EXCLUSIVE LOCK\n";
     return EXCLUSIVE;
   }
 }
