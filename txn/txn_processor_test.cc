@@ -78,9 +78,9 @@ void Benchmark(const vector<LoadGen*>& lg) {
   int active_txns = 100;
   deque<Txn*> doneTxns;
 
-  vector<int> tests = {1, 3, 5};
-  // Only mode that implemented that is LOCKING A, OCC and MVCC
-  for(auto dd : tests) {
+  vector<int> listOfTest = {1,3,5};
+  // For each LOCKING A, OCC and MVCC mode
+  for(auto dd : listOfTest) {
     CCMode mode = static_cast<CCMode>(dd);
     // Print out mode name.
     cout << ModeToString(mode) << flush;
@@ -210,5 +210,4 @@ int main(int argc, char** argv) {
   for (uint32 i = 0; i < lg.size(); i++)
     delete lg[i];
   lg.clear();
-
 }

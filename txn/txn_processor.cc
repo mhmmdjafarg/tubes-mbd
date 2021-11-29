@@ -321,12 +321,6 @@ void TxnProcessor::ApplyWrites(Txn *txn)
 
 void TxnProcessor::RunOCCScheduler()
 {
-  // CPSC 438/538:
-  //
-  // Implement this method!
-  //
-  // [For now, run serial scheduler in order to make it through the test
-  // suite]
   // Pseudocode
   /*
   while (tp_.Active()) { 
