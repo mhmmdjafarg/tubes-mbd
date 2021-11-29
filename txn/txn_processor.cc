@@ -428,6 +428,86 @@ void TxnProcessor::RunOCCParallelScheduler()
   RunSerialScheduler();
 }
 
+bool TxnProcessor::MVCCCheckWrites(Txn* txn) {
+  for (auto& each_write : txn->writeset_) {
+    if (!(storage_->CheckWrite(each_write, txn->unique_id_))) {
+      return storage_->CheckWrite(each_write, txn->unique_id_);
+    }
+  }
+
+  return true;
+}
+
+void TxnProcessor::MVCCLockWriteKeys(Txn* txn) {
+  for (auto& each_write : txn->writeset_) {
+    storage_->Lock(each_write);
+  }
+}
+
+void TxnProcessor::MVCCUnlockWriteKeys(Txn* txn) {
+  for (auto& each_write : txn->writeset_) {
+    storage_->Unlock(each_write);
+  }
+}
+
+void TxnProcessor::MVCCExecuteTxn(Txn* txn) {
+  // Read all necessary data for this transaction from storage (Note that you should lock the key before each read)
+  for (auto& each_read : txn->readset_) {
+    Value res;
+
+    // lock
+    storage_->Lock(each_read);
+    if (storage_->Read(each_read, &res, txn->unique_id_)) {
+      txn->reads_[each_read] = res;
+    }
+
+    // unlock
+    storage_->Unlock(each_read);
+  }
+
+  for (auto& each_write : txn->writeset_) {
+    Value res;
+
+    storage_->Lock(each_write);
+    if (storage_->Read(each_write, &res, txn->unique_id_)) {
+      txn->reads_[each_write] = res;
+    }
+    storage_->Unlock(each_write);
+  }
+
+  // Execute the transaction logic (i.e. call Run() on the transaction)
+  txn->Run();
+  completed_txns_.Push(txn);
+
+  // Call MVCCStorage::CheckWrite method to check all keys in the write_set_
+  bool is_passed = MVCCCheckWrites(txn);
+  
+  if(is_passed) {
+    // If (each key passed the check)
+    // Apply the writes
+    ApplyWrites(txn);
+
+    // Release all locks for keys in the write_set_
+    MVCCUnlockWriteKeys(txn);
+
+    // commit
+    txn->status_ = COMMITTED;
+    txn_results_.Push(txn);
+  } else {
+    // else if (at least one key failed the check)
+    // Release all locks for keys in the write_set_
+    MVCCUnlockWriteKeys(txn);
+
+    // Cleanup txn
+    txn->reads_.clear();
+    txn->writes_.clear();
+    txn->status_ = INCOMPLETE;
+
+    // Completely restart the transaction.
+    NewTxnRequest(txn);
+  }
+}
+
 void TxnProcessor::RunMVCCScheduler()
 {
   // CPSC 438/538:
@@ -439,5 +519,16 @@ void TxnProcessor::RunMVCCScheduler()
   //
   // [For now, run serial scheduler in order to make it through the test
   // suite]
-  RunSerialScheduler();
+  Txn* txn;
+
+  while (tp_.Active()) {
+    // pop if there is transaction and assign it to txn
+    if (txn_requests_.Pop(&txn)) {
+      tp_.RunTask(new Method<TxnProcessor, void, Txn*>(
+        this,
+        &TxnProcessor::MVCCExecuteTxn,
+        txn
+      ));
+    }
+  }
 }
