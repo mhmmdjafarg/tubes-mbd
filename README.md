@@ -3,6 +3,13 @@
 - install make jika pada linux dapat melakukan command `sudo apt-get install -y make`
 - `make test`
 
+## Anggota
+- Karlsen Adiyasa Bachtiar		   13519001
+- Rahmah Khoirussyifa' Nurdini   13519013
+- Arjuna Marcelino				   13519021
+- Arsa Daris Gintara			      13519037
+- Muhammad Jafar Gundari		   13519197
+
 
 -----------------------------------------------------------
 Part 1A: Simple Locking (exclusive locks only)   10 points
