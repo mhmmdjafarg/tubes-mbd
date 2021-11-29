@@ -1,41 +1,7 @@
 # Tubes MBD 2021-2022 Kelompok 08 K01
-
-CPSC 438, Assignment 2: Concurrency Control (Locking, OCC and MVCC)
-Lead TF: Kun Ren (Questions or clarification requests should be emailed to kun.ren@yale.edu)
-
-Please take advantage of teaching fellow office hours if you have trouble understanding the code that we are providing you or have other questions about the assignment.
-Time:     Monday   7:30-9:30 PM
-          Thursday 7:30-9:30 PM
-Location: AKW 203
- 
- 
-------------------------------------
-Understanding Locking, OCC and MVCC
-------------------------------------
-Before beginning this assignment, please be sure you have a clear understanding of the goals and challenges of concurrency control mechanisms in database systems. The paper you read for class (http://zoo.cs.yale.edu/classes/cs637/franklin97concurrency.pdf) provides a good introduction to this material.
-
-In this assignment you will be implementing five concurrency control schemes:
-  * two versions of locking schemes, both of which are considerably simpler than standard two-phase locking
-  * a version of OCC very similar to the serial-validation version described in the OCC paper you read for class (http://www.seas.upenn.edu/~zives/cis650/papers/opt-cc.pdf)
-  * a version of OCC somewhat similar to the parallel-validation version described in the OCC paper
-  * a version of MVCC timestamp ordering scheme based on the paper we read for class on this topic.
- 
-
----------
-Framework
----------
-You'll be implementing these concurrency control schemes within a transaction processing framework that implements a simple, main-memory resident key-value store. This is a prototype system designed specially for this assignment, and may not be 100% perfect, so please watch for class emails in the coming weeks, as parts of this assignment may change slightly. Please report any bugs or problems to Kun Ren.
-
-To setup our framework, simply download the code(run: git clone https://github.com/kunrenyale/assignment_cc.git). You'll see that it contains two subdirectories---'txn' and 'utils'. Nearly all of the source files you need to worry about are in the 'txn' subdirectory, though you might need to occasionally take a peek at a file or two in the 'util' subdirectory.
-
-To build and test the system, you can run
-  make test
-at any time. This will first compile the system; if this succeeds with no errors, it will also run two test scripts: one which performs some basic correctness tests of your lock manager implementation, and a second which profiles performance of the system. This second one takes a number of minutes to run, but you can cancel it at any time by pressing ctrl-C.(Note that you can not pass the lock manager test right now until you complete the lock manager implementation.)
-
-Your submissions will be graded on code clarity as well correctness and efficiency. When implementing your solutions, please:
-  * Comment your header files & code thoroughly in the manner demonstrated in the rest of the framework.
-  * Organize your code logically.
-  * Use descriptive variable names.
+## Cara menjalankan test program
+- install make jika pada linux dapat melakukan command `sudo apt-get install -y make`
+- `make test`
 
 In this assignment, you will need to make changes to the following files/classes/methods:
 
@@ -67,13 +33,6 @@ Once you've looked through the code and are somewhat familiar with the overall s
    2b) Otherwise, immediately release all locks that were granted before this denial, and immediately abort and queue the transaction for restart at a later point.
 3) (We only get to this point if we didn't get to step (2b) which aborts the transaction.) Execute the program logic.
 4) Release ALL locks at commit/abort time.
-
-In order to avoid the complexities of creating a thread-safe lock manager in this assignment, our implementation only has a single thread that manages the state of the lock manager. This thread performs all the lock requests on behalf of the transactions and then hands over control to a separate execution thread in step (3) above. Note that for workloads where transactions make heavy use of the lock manager, this single lock manager thread may become a performance bottleneck as it has to request and release locks on behalf of ALL transactions.
-
-To help you get comfortable using the transaction processing framework, most of this algorithm is already implemented in 'TxnProcessor::RunLockingScheduler()'. Locks are requested and released at all the right times, and all necessary data structures for an efficient lock manager are already in place. All you need to do is implement the 'WriteLock', 'Release', and 'Status' methods in the class 'LockManagerA'. Make sure you look at the file lock_manager.h which explains the data structures that you will be using to queue up requests for locks in the lock manager.
-
-The test file 'txn/lock_manager_test.cc' provides some rudimentary correctness tests for your lock manager implementations, but additional tests may be added when we grade the assignment. We therefore suggest that you augment the tests with any additional cases you can think of that the existing tests do not cover.
-
 
 ---------------------------------------------------------------------------
 Part 2: Serial Optimistic Concurrency Control (OCC)   10 points
