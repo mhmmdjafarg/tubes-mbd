@@ -47,6 +47,21 @@ bool MVCCStorage::Read(Key key, Value* result, int txn_unique_id) {
 
   // Hint: Iterate the version_lists and return the verion whose write timestamp
   // (version_id) is the largest write timestamp less than or equal to txn_unique_id.
+  if (!mvcc_data_.count(key)) {
+    return false;
+  }
+  
+  int max_ver = -999;
+  for (auto& each : *mvcc_data_[key]) {
+    if (each->version_id_ <= txn_unique_id && each->version_id_ >= max_ver) {
+      // set rts version
+      *result = each->value_;
+      each->max_read_id_ = txn_unique_id; // kayanya harusnya yg diganti cuma largest less than or equal
+
+      max_ver = each->version_id_;
+    }
+
+  }
 
   return true;
 }
@@ -64,7 +79,17 @@ bool MVCCStorage::CheckWrite(Key key, int txn_unique_id) {
   // write_set. Return true if this key passes the check, return false if not. 
   // Note that you don't have to call Lock(key) in this method, just
   // call Lock(key) before you call this method and call Unlock(key) afterward.
+  if (!mvcc_data_.count(key)) {
+    return false;
+  }
 
+  // latest version
+  Version* ver = mvcc_data_[key]->back();
+
+  // rts > ti
+  if (ver->max_read_id_ > txn_unique_id) {
+    return false;
+  }
 
   return true;
 }
@@ -79,4 +104,28 @@ void MVCCStorage::Write(Key key, Value value, int txn_unique_id) {
   // into the version_lists. Note that InitStorage() also calls this method to init storage. 
   // Note that you don't have to call Lock(key) in this method, just
   // call Lock(key) before you call this method and call Unlock(key) afterward.
+  // get max ver id
+  int max_ver_id = -999;
+  for (auto& each : *mvcc_data_[key]) {
+    if (each->version_id_ <= txn_unique_id && each->version_id_ > max_ver_id){
+      max_ver_id = each->version_id_;
+    }
+  }
+
+  bool is_found_equal = false;
+  for (auto& each : *mvcc_data_[key]) {
+    if (each->version_id_ == max_ver_id && each->version_id_ == txn_unique_id){
+      each->value_ = value;
+      is_found_equal = true;
+    }
+  }
+  
+  if (!is_found_equal){
+    Version* new_ver = new Version;
+    new_ver->value_ = value;
+    new_ver->max_read_id_ = txn_unique_id;
+    new_ver->version_id_ = txn_unique_id;
+
+    mvcc_data_[key]->push_back(new_ver);
+  }
 }
