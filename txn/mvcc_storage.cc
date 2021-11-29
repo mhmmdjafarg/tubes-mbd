@@ -51,19 +51,27 @@ bool MVCCStorage::Read(Key key, Value* result, int txn_unique_id) {
     return false;
   }
   
-  int max_ver = -999;
+  int max_ver = 0;
   for (auto& each : *mvcc_data_[key]) {
-    if (each->version_id_ <= txn_unique_id && each->version_id_ >= max_ver) {
-      // set rts version
-      *result = each->value_;
-      each->max_read_id_ = txn_unique_id; // kayanya harusnya yg diganti cuma largest less than or equal
-
-      max_ver = each->version_id_;
+    int cur_ver = each->version_id_;
+    if(cur_ver > txn_unique_id || cur_ver <= max_ver){
+      continue;
     }
-
+    max_ver = cur_ver;
   }
 
-  return true;
+  for (auto& each : *mvcc_data_[key]) {
+    if (each->version_id_ != max_ver){
+      continue;
+    } 
+    if (each->max_read_id_ < txn_unique_id) {
+      each->max_read_id_ = txn_unique_id;
+    }
+    // set rts version
+    *result = each->value_;
+    return true;
+  }
+  return false;
 }
 
 
@@ -83,14 +91,21 @@ bool MVCCStorage::CheckWrite(Key key, int txn_unique_id) {
     return false;
   }
 
-  // latest version
-  Version* ver = mvcc_data_[key]->back();
-
-  // rts > ti
-  if (ver->max_read_id_ > txn_unique_id) {
-    return false;
+  int max_ver = 0;
+  for (auto& each : *mvcc_data_[key]) {
+    int cur_ver = each->version_id_;
+    if(cur_ver > txn_unique_id || cur_ver <= max_ver){
+      continue;
+    }
+    max_ver = cur_ver;
   }
 
+  // latest version
+  for (auto each: *mvcc_data_[key]){
+    if (each->version_id_ == max_ver) {
+      return(each->max_read_id_ <= txn_unique_id);
+    }
+  }
   return true;
 }
 
@@ -105,27 +120,53 @@ void MVCCStorage::Write(Key key, Value value, int txn_unique_id) {
   // Note that you don't have to call Lock(key) in this method, just
   // call Lock(key) before you call this method and call Unlock(key) afterward.
   // get max ver id
-  int max_ver_id = -999;
-  for (auto& each : *mvcc_data_[key]) {
-    if (each->version_id_ <= txn_unique_id && each->version_id_ > max_ver_id){
-      max_ver_id = each->version_id_;
+
+  if(mvcc_data_.count(key)){
+    int max_ver = 0;
+    for (auto& each : *mvcc_data_[key]) {
+      int cur_ver = each->version_id_;
+      if(cur_ver > txn_unique_id || cur_ver <= max_ver){
+        continue;
+      }
+      max_ver = cur_ver;
+    }
+
+    for (auto &each : *mvcc_data_[key]){
+      if(each->version_id_ == max_ver && max_ver == txn_unique_id){
+        each->value_ = value;
+        return;
+      }
     }
   }
-
-  bool is_found_equal = false;
-  for (auto& each : *mvcc_data_[key]) {
-    if (each->version_id_ == max_ver_id && each->version_id_ == txn_unique_id){
-      each->value_ = value;
-      is_found_equal = true;
-    }
+  else{
+    mvcc_data_[key] = new std::deque<Version*>;
   }
-  
-  if (!is_found_equal){
-    Version* new_ver = new Version;
-    new_ver->value_ = value;
-    new_ver->max_read_id_ = txn_unique_id;
-    new_ver->version_id_ = txn_unique_id;
 
-    mvcc_data_[key]->push_back(new_ver);
-  }
+  Version *new_ver = new Version;
+  *new_ver = Version {value, txn_unique_id, txn_unique_id};
+  mvcc_data_[key] -> push_back(new_ver);
 }
+  // int max_ver_id = -999;
+  // for (auto& each : *mvcc_data_[key]) {
+  //   if (each->version_id_ <= txn_unique_id && each->version_id_ > max_ver_id){
+  //     max_ver_id = each->version_id_;
+  //   }
+  // }
+
+  // bool is_found_equal = false;
+  // for (auto& each : *mvcc_data_[key]) {
+  //   if (each->version_id_ == max_ver_id && each->version_id_ == txn_unique_id){
+  //     each->value_ = value;
+  //     is_found_equal = true;
+  //   }
+  // }
+  
+  // if (!is_found_equal){
+  //   Version* new_ver = new Version;
+  //   new_ver->value_ = value;
+  //   new_ver->max_read_id_ = txn_unique_id;
+  //   new_ver->version_id_ = txn_unique_id;
+
+  //   mvcc_data_[key]->push_back(new_ver);
+  // }
+// }
