@@ -321,12 +321,6 @@ void TxnProcessor::ApplyWrites(Txn *txn)
 
 void TxnProcessor::RunOCCScheduler()
 {
-  // CPSC 438/538:
-  //
-  // Implement this method!
-  //
-  // [For now, run serial scheduler in order to make it through the test
-  // suite]
   // Pseudocode
   /*
   while (tp_.Active()) { 
@@ -374,7 +368,10 @@ void TxnProcessor::RunOCCScheduler()
         for (auto &&key : executedTxn->readset_)
         {
           if (executedTxn->occ_start_time_ < storage_->Timestamp(key))
+          {
             valid = false;
+            break;
+          }
         }
         // Check write set only if valid still true
         if (valid)
@@ -382,23 +379,29 @@ void TxnProcessor::RunOCCScheduler()
           for (auto &&key : executedTxn->writeset_)
           {
             if (executedTxn->occ_start_time_ < storage_->Timestamp(key))
+            {
               valid = false;
+              break;
+            }
           }
         }
 
-        if (!valid){
-            // Cleanup txn
-            executedTxn->writes_.empty();
-            executedTxn->reads_.empty();
-            executedTxn->status_ = INCOMPLETE;
+        if (!valid)
+        {
+          // Cleanup txn set write and read to empty
+          executedTxn->writes_.empty();
+          executedTxn->reads_.empty();
+          executedTxn->status_ = INCOMPLETE;
 
-            // Restart transaction
-            mutex_.Lock();
-            executedTxn->unique_id_ = next_unique_id_;
-            next_unique_id_++;
-            txn_requests_.Push(executedTxn);
-            mutex_.Unlock();
-        } else {
+          // Restart transaction
+          mutex_.Lock();
+          executedTxn->unique_id_ = next_unique_id_;
+          next_unique_id_++;
+          txn_requests_.Push(executedTxn);
+          mutex_.Unlock();
+        }
+        else
+        {
           // Apply all writes
           // Mark transaction as committed
           ApplyWrites(executedTxn);
