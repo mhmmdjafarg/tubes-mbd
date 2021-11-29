@@ -78,10 +78,10 @@ void Benchmark(const vector<LoadGen*>& lg) {
   int active_txns = 100;
   deque<Txn*> doneTxns;
 
-  // For each MODE...
-  for (CCMode mode = SERIAL;
-      mode <= MVCC;
-      mode = static_cast<CCMode>(mode+1)) {
+  vector<int> tests = {1, 3, 5};
+  // Only mode that implemented that is LOCKING A, OCC and MVCC
+  for(auto dd : tests) {
+    CCMode mode = static_cast<CCMode>(dd);
     // Print out mode name.
     cout << ModeToString(mode) << flush;
 
@@ -142,11 +142,6 @@ int main(int argc, char** argv) {
   cpu_set_t cs;
   CPU_ZERO(&cs);
   CPU_SET(7, &cs);
-  int ret = sched_setaffinity(0, sizeof(cs), &cs);
-  if (ret) {
-    perror("sched_setaffinity");
-    assert(false);
-  }
 
   vector<LoadGen*> lg;
 
@@ -215,52 +210,5 @@ int main(int argc, char** argv) {
   for (uint32 i = 0; i < lg.size(); i++)
     delete lg[i];
   lg.clear();
-  
-  cout << "High contention read-write (1 records)" << endl;
-  lg.push_back(new RMWLoadGen(5, 0, 1, 0.0001));
-  lg.push_back(new RMWLoadGen(5, 0, 1, 0.001));
-  lg.push_back(new RMWLoadGen(5, 0, 1, 0.01));
 
-  Benchmark(lg);
-
-  for (uint32 i = 0; i < lg.size(); i++)
-    delete lg[i];
-  lg.clear();
-  
-  cout << "High contention read-write (5 records)" << endl;
-  lg.push_back(new RMWLoadGen(100, 0, 5, 0.0001));
-  lg.push_back(new RMWLoadGen(100, 0, 5, 0.001));
-  lg.push_back(new RMWLoadGen(100, 0, 5, 0.01));
-
-  Benchmark(lg);
-
-  for (uint32 i = 0; i < lg.size(); i++)
-    delete lg[i];
-  lg.clear();
-
-  cout << "High contention read-write (10 records)" << endl;
-  lg.push_back(new RMWLoadGen(100, 0, 10, 0.0001));
-  lg.push_back(new RMWLoadGen(100, 0, 10, 0.001));
-  lg.push_back(new RMWLoadGen(100, 0, 10, 0.01));
-
-  Benchmark(lg);
-
-  for (uint32 i = 0; i < lg.size(); i++)
-    delete lg[i];
-  lg.clear();
-  
-  // 80% of transactions are READ only transactions and run for the full
-  // transaction duration. The rest are very fast (< 0.1ms), high-contention
-  // updates.
-  cout << "High contention mixed read only/read-write " << endl;
-  lg.push_back(new RMWLoadGen2(50, 30, 10, 0.0001));
-  lg.push_back(new RMWLoadGen2(50, 30, 10, 0.001));
-  lg.push_back(new RMWLoadGen2(50, 30, 10, 0.01));
-
-  Benchmark(lg);
-
-  for (uint32 i = 0; i < lg.size(); i++)
-    delete lg[i];
-  lg.clear();
 }
-
