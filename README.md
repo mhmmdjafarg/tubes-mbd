@@ -3,25 +3,6 @@
 - install make jika pada linux dapat melakukan command `sudo apt-get install -y make`
 - `make test`
 
-In this assignment, you will need to make changes to the following files/classes/methods:
-
-  txn/lock_manager.cc:
-    all methods (aside for the constructor and deconstructor) for classes 'LockManagerA' (Part 1A) and 'LockManagerB' (Part 1B)
-
-  txn/txn_processor.cc:
-    'TxnProcessor::RunOCCScheduler' method (Part 2)
-    'TxnProcessor::RunOCCParallelScheduler' method (Part 3)
-    'TxnProcessor::RunMVCCScheduler' method (Part 4)
-    
-  txn/mvcc_storage.cc:
-    'MVCCStorage::Read' method (Part 4)
-    'MVCCStorage::Write' method (Part 4)
-    'MVCCStorage::CheckWrite' method (Part 4)
-    
-However, to understand what's going on in the framework, you will need to look through most of the files in the txn/ directory. We suggest looking first at the TxnProcessor object (txn/txn_processor.h) and in particular the 'TxnProcessor::RunSerialScheduler()' and 'TxnProcessor::RunLockingScheduler()' methods (txn/txn_processor.cc) and examining how it interacts with various objects in the system.
-
-Note: The framework relies heavily on the C++ standard template library (STL). If you have any questions about how to use the STL (it's really quite easy and friendly, I promise), please consult your search engine of choice.
-
 
 -----------------------------------------------------------
 Part 1A: Simple Locking (exclusive locks only)   10 points
